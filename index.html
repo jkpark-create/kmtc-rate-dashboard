@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMTC Freight Rate Dashboard</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #333; }
+.header { background: linear-gradient(135deg, #1a237e, #283593); color: white; padding: 20px 30px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 22px; font-weight: 600; }
+.header .subtitle { font-size: 13px; opacity: 0.8; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+/* Filter Panel */
+.filters { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; }
+.filter-group label { font-size: 12px; font-weight: 600; color: #666; text-transform: uppercase; }
+.filter-group select, .filter-group input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px; }
+.filter-group select:focus { border-color: #1a237e; outline: none; }
+/* Multi-select dropdown */
+.multi-select { position: relative; min-width: 180px; }
+.multi-select .ms-trigger { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; min-height: 36px; user-select: none; }
+.multi-select .ms-trigger:hover { border-color: #1a237e; }
+.multi-select .ms-trigger .arrow { font-size: 10px; color: #888; }
+.multi-select .ms-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; width: max-content; background: white; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 100; max-height: 250px; overflow-y: auto; margin-top: 2px; }
+.multi-select.open .ms-dropdown { display: block; }
+.multi-select .ms-item { padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; line-height: 1.2; }
+.multi-select .ms-item:hover { background: #f0f2f5; }
+.multi-select .ms-item input[type=checkbox] { margin: 0; accent-color: #1a237e; width: 14px; height: 14px; flex-shrink: 0; }
+.multi-select .ms-item.ms-all { border-bottom: 1px solid #eee; font-weight: 600; }
+.multi-select .ms-count { background: #1a237e; color: white; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
+.source-desc { font-size: 11px; color: #999; margin-top: 2px; }
+.btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 600; }
+.btn-primary { background: #1a237e; color: white; }
+.btn-primary:hover { background: #283593; }
+.btn-secondary { background: #e8eaf6; color: #1a237e; }
+.btn-add { background: #4caf50; color: white; font-size: 20px; padding: 6px 14px; }
+.btn-add:hover { background: #388e3c; }
+
+/* Compare list */
+.compare-list { background: white; border-radius: 10px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.compare-list h3 { font-size: 14px; color: #666; margin-bottom: 10px; }
+.compare-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+.tag .remove { cursor: pointer; font-size: 16px; opacity: 0.6; }
+.tag .remove:hover { opacity: 1; }
+
+/* Stats */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.stat-card { background: white; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.stat-card .label { font-size: 12px; color: #888; text-transform: uppercase; }
+.stat-card .value { font-size: 28px; font-weight: 700; margin-top: 5px; }
+.stat-card .change { font-size: 13px; margin-top: 3px; }
+.stat-card .change.up { color: #e53935; }
+.stat-card .change.down { color: #43a047; }
+
+/* Chart */
+.chart-panel { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.chart-panel h2 { font-size: 16px; margin-bottom: 15px; color: #333; }
+.chart-container { position: relative; height: 400px; }
+.chart-options { display: flex; gap: 10px; margin-bottom: 15px; }
+.chip { padding: 5px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid #ddd; background: white; }
+.chip.active { background: #1a237e; color: white; border-color: #1a237e; }
+
+/* Table */
+.table-panel { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f5f5f5; padding: 10px 12px; text-align: left; font-weight: 600; position: sticky; top: 0; user-select: none; }
+th:hover { background: #e8eaf6; }
+td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+tr:hover { background: #f8f9ff; }
+.rate-up { color: #e53935; }
+.rate-down { color: #43a047; }
+
+
+/* Loading */
+.loading { text-align: center; padding: 60px; color: #888; }
+.loading .spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid #ddd; border-top-color: #1a237e; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Color palette for chart lines */
+.hidden { display: none; }
+
+/* Auth */
+#authOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #1a237e, #283593); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.auth-box { background: white; border-radius: 16px; padding: 50px 40px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 400px; }
+.auth-box h2 { font-size: 22px; color: #1a237e; margin-bottom: 8px; }
+.auth-box p { font-size: 14px; color: #666; margin-bottom: 30px; }
+.auth-box .auth-error { color: #e53935; font-size: 13px; margin-top: 15px; display: none; }
+.auth-user { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(255,255,255,0.15); border-radius: 20px; font-size: 13px; cursor: pointer; color: white; }
+.auth-user img { width: 28px; height: 28px; border-radius: 50%; }
+.auth-user:hover { background: rgba(255,255,255,0.25); }
+</style>
+</head>
+<body>
+
+<!-- Auth Overlay -->
+<div id="authOverlay">
+  <div class="auth-box">
+    <h2>KMTC Freight Rate Dashboard</h2>
+    <p>Sign in with your company Google account</p>
+    <button id="btnGoogleSignIn" onclick="doSignIn()" style="display:inline-flex; align-items:center; gap:10px; padding:10px 24px; border:1px solid #ddd; border-radius:4px; font-size:14px; font-weight:500; background:white; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.9 23.9 0 000 24c0 3.77.89 7.33 2.44 10.49l8.09-5.9z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<div id="appWrap" style="display:none;">
+<div class="header">
+  <div>
+    <h1>KMTC Freight Rate Dashboard</h1>
+    <div class="subtitle">Weekly Rate Tracking & Trend Analysis</div>
+  </div>
+  <div style="display:flex; align-items:center; gap:15px;">
+    <div style="font-size:13px; opacity:0.7;" id="lastUpdate"></div>
+    <a href="guide.html" style="color:white; font-size:12px; text-decoration:none; background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:15px;" title="User Guide">Guide</a>
+    <button onclick="refreshData()" style="color:white; font-size:12px; background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:15px; border:none; cursor:pointer;" title="Refresh from Google Sheets">Refresh</button>
+    <div class="auth-user" onclick="signOut()" title="로그아웃">
+      <img id="userPhoto" src="" alt="">
+      <span id="userName"></span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label>Source</label>
+      <select id="fSource"><option value="">All</option></select>
+      <div class="source-desc" id="sourceDesc"></div>
+    </div>
+    <div class="filter-group">
+      <label>POL Country</label>
+      <select id="fPolCn"><option value="">All</option></select>
+    </div>
+    <div class="filter-group">
+      <label>POL Port</label>
+      <div class="multi-select" id="msPolPort">
+        <div class="ms-trigger" onclick="toggleMultiSelect('msPolPort')">
+          <span class="ms-label">All</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown"></div>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>POD Country</label>
+      <select id="fPodCn"><option value="">Select Country</option></select>
+    </div>
+    <div class="filter-group">
+      <label>POD Port</label>
+      <select id="fPodPort"><option value="">Select Port</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Container</label>
+      <select id="fContainer">
+        <option value="r40">40ft</option>
+        <option value="r20">20ft</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="searchRoutes()" title="조회">조회</button>
+    <button class="btn btn-add" onclick="addToCompare()" title="비교 추가">+</button>
+    <button class="btn btn-secondary" onclick="clearCompare()">Clear All</button>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>Rate Trend</h2>
+      <div class="chart-options">
+        <span class="chip active" data-range="all" onclick="setRange(this)">All</span>
+        <span class="chip" data-range="52" onclick="setRange(this)">1Y</span>
+        <span class="chip" data-range="26" onclick="setRange(this)">6M</span>
+        <span class="chip" data-range="13" onclick="setRange(this)">3M</span>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="rateChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Rate History Table -->
+  <div class="chart-panel">
+    <h2>Rate History (Latest 20 weeks)</h2>
+    <div class="table-panel" style="max-height:400px; overflow-y:auto; box-shadow:none; padding:0;">
+      <table id="rateTable">
+        <thead><tr id="tableHeader"></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Comparing Routes -->
+  <div class="compare-list" id="comparePanel" style="display:none;">
+    <h3>Comparing Routes:</h3>
+    <div class="compare-tags" id="compareTags"></div>
+  </div>
+
+</div>
+
+<div class="loading" id="loadingDiv">
+  <div class="spinner"></div>
+  <p style="margin-top:15px;">Loading rate data...</p>
+</div>
+</div><!-- /appWrap -->
+
+<script>
+// ============ AUTH (Token Client for Sheets API access) ============
+const GOOGLE_CLIENT_ID = '409330651463-giie223egsskdq10etn642gjtron1hq5.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.readonly email profile openid';
+const ALLOWED_DOMAINS = []; // e.g. ['kmtc.co.kr']
+
+let accessToken = null;
+let tokenClient = null;
+
+function initTokenClient() {
+  if (tokenClient) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback: handleTokenResponse,
+  });
+}
+
+function doSignIn() {
+  initTokenClient();
+  tokenClient.requestAccessToken();
+}
+
+async function handleTokenResponse(resp) {
+  if (resp.error) {
+    document.getElementById('authError').textContent = resp.error;
+    document.getElementById('authError').style.display = 'block';
+    return;
+  }
+  accessToken = resp.access_token;
+
+  // Fetch user info
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { 'Authorization': 'Bearer ' + accessToken }
+    });
+    const user = await r.json();
+    const domain = (user.email || '').split('@')[1] || '';
+
+    if (ALLOWED_DOMAINS.length > 0 && !ALLOWED_DOMAINS.includes(domain)) {
+      document.getElementById('authError').textContent = `${user.email} - Access denied.`;
+      document.getElementById('authError').style.display = 'block';
+      accessToken = null;
+      google.accounts.oauth2.revoke(resp.access_token);
+      return;
+    }
+
+    sessionStorage.setItem('gtoken', accessToken);
+    sessionStorage.setItem('guser', JSON.stringify({ name: user.name, email: user.email, picture: user.picture }));
+    showApp(user);
+  } catch(e) {
+    document.getElementById('authError').textContent = 'Failed to get user info.';
+    document.getElementById('authError').style.display = 'block';
+  }
+}
+
+function showApp(user) {
+  document.getElementById('authOverlay').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+  document.getElementById('userName').textContent = user.name || user.email;
+  document.getElementById('userPhoto').src = user.picture || '';
+  loadData();
+}
+
+function signOut() {
+  if (accessToken) google.accounts.oauth2.revoke(accessToken);
+  sessionStorage.clear();
+  location.reload();
+}
+
+function checkSession() {
+  const token = sessionStorage.getItem('gtoken');
+  const userStr = sessionStorage.getItem('guser');
+  if (token && userStr) {
+    accessToken = token;
+    try { showApp(JSON.parse(userStr)); return; } catch(e) {}
+  }
+  sessionStorage.clear();
+  document.getElementById('authOverlay').style.display = 'flex';
+}
+
+window.addEventListener('load', checkSession);
+
+// ============ GLOBALS ============
+let DATA = [];
+let compareItems = [];
+let chart = null;
+let currentRange = 'all';
+
+const COLORS = [
+  '#1a237e','#e53935','#43a047','#fb8c00','#8e24aa',
+  '#00acc1','#d81b60','#6d4c41','#546e7a','#f4511e',
+  '#7cb342','#039be5','#c0ca33','#5e35b1','#00897b'
+];
+
+// POL -> Country mapping
+const POL_COUNTRY_MAP = {
+  'AE JEA':'AE','EGSKN':'EG','ID JKT':'ID','ID SUB':'ID',
+  'IN MAA KTP':'IN','IN MUN':'IN','IN NSA':'IN','JOAQJ':'JO',
+  'MY PGU':'MY','MY PKW,PKG':'MY','SAJED':'SA','SG SIN':'SG',
+  'VN HPH':'VN','VN SGN':'VN',
+  'CAN':'CN','DLC':'CN','HKG':'HK','NBO':'CN','NKG':'CN',
+  'SHA':'CN','SZP':'CN','TAO':'CN','XGG':'CN','XMN':'CN'
+};
+
+const SOURCE_DESC = { 'SEA': '동남아/중동/기타', 'CN_HK': '중국/홍콩' };
+
+// Multi-select state
+const msState = { msPolPort: { selected: new Set(), allValues: [] } };
+
+// ============ GOOGLE SHEETS API ============
+const SEA_SHEET_ID  = '1Itzp1CccniJngry-535jLnFvfDuuG0se';
+const CNHK_SHEET_ID = '1T8ZZeJ0cr_jWvyki9OQHKmD8qW2Z4Ai4SgBn3Xkg3vk';
+const SEA_SKIP   = [' OBT key areas'];
+const CNHK_SHEETS = ['SHA','NBO','TAO','XGG','DLC','NKG','SZP','CAN','XMN','HKG','MX'];
+const CACHE_KEY  = 'kmtc_rate_cache';
+const CACHE_TTL  = 30 * 60 * 1000; // 30 min
+
+async function sheetsApi(url) {
+  const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+  if (r.status === 401) { sessionStorage.clear(); location.reload(); return; }
+  if (!r.ok) throw new Error('Sheets API ' + r.status);
+  return r.json();
+}
+
+async function getSheetNames(id) {
+  const d = await sheetsApi(`https://sheets.googleapis.com/v4/spreadsheets/${id}?fields=sheets.properties.title`);
+  return d.sheets.map(s => s.properties.title);
+}
+
+async function batchGetValues(id, ranges) {
+  const params = ranges.map(r => 'ranges=' + encodeURIComponent(r)).join('&');
+  const d = await sheetsApi(`https://sheets.googleapis.com/v4/spreadsheets/${id}/values:batchGet?${params}&valueRenderOption=UNFORMATTED_VALUE`);
+  return d.valueRanges || [];
+}
+
+// Download Excel file from Google Drive and parse with SheetJS
+async function downloadAndParseXlsx(fileId) {
+  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+  const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
+  if (resp.status === 401) { sessionStorage.clear(); location.reload(); return; }
+  if (!resp.ok) throw new Error('Drive download ' + resp.status);
+  const buf = await resp.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  // Convert to same format as Sheets API: { sheetNames, valuesArr }
+  const sheetNames = wb.SheetNames;
+  const valuesArr = sheetNames.map(name => {
+    const ws = wb.Sheets[name];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+    return { values: rows };
+  });
+  return { sheetNames, valuesArr };
+}
+
+// ============ PARSE HELPERS ============
+function parseWeekLabel(label) {
+  if (!label) return null;
+  const s = String(label).replace(/\n/g, ' ');
+  const m = s.match(/(\d{4})\s*(?:W|WK)\s*(\d{1,2})/i);
+  if (!m) return null;
+  const year = parseInt(m[1]), wk = parseInt(m[2]);
+  const d = new Date(year, 0, 1);
+  d.setDate(d.getDate() + (wk - 1) * 7);
+  return { wk: `${year}-W${String(wk).padStart(2,'0')}`, date: d.toISOString().slice(0,10) };
+}
+
+function safeFloat(v) {
+  if (v === null || v === undefined || v === '' || v === '-' || v === 'SKIP') return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
+function cell(rows, r, c) { return rows[r] && rows[r][c] !== undefined ? rows[r][c] : null; }
+
+// ============ PARSE SEA ============
+function parseSEA(sheetNames, valuesArr) {
+  const rates = [];
+  sheetNames.forEach((name, si) => {
+    if (SEA_SKIP.includes(name)) return;
+    const rows = valuesArr[si].values || [];
+    if (rows.length < 5) return;
+    const pol = name.trim();
+
+    // Find weeks: row 2 (idx 1), col 7+ (idx 6+), step 2
+    const weeks = [];
+    for (let c = 6; c < (rows[1]||[]).length; c += 2) {
+      const pw = parseWeekLabel(cell(rows,1,c));
+      if (pw) weeks.push({ c20: c, c40: c+1, ...pw });
+    }
+    if (!weeks.length) return;
+
+    let curCn = '';
+    for (let r = 4; r < rows.length; r++) {
+      const cv = cell(rows, r, 0);
+      const pv = cell(rows, r, 1);
+      if (cv) curCn = String(cv).trim().split('\n')[0];
+      if (!pv) continue;
+      const podPort = String(pv).trim();
+      const rv = cell(rows, r, 2);
+      const remark = (rv && String(rv).trim() && !/^\d+\.?\d*$/.test(String(rv).trim())) ? String(rv).trim().replace(/\n/g,' ') : '';
+
+      for (const w of weeks) {
+        const r20 = safeFloat(cell(rows, r, w.c20));
+        const r40 = safeFloat(cell(rows, r, w.c40));
+        if (r20 !== null || r40 !== null) {
+          rates.push({ src:'SEA', pol, pod_cn:curCn, pod_port:podPort, week:w.wk, date:w.date, r20, r40, tier:'ALL', remark });
+        }
+      }
+    }
+  });
+  return rates;
+}
+
+// ============ PARSE CN_HK ============
+function parseCNHK(sheetNames, valuesArr) {
+  const rates = [];
+  sheetNames.forEach((name, si) => {
+    if (!CNHK_SHEETS.includes(name)) return;
+    const rows = valuesArr[si].values || [];
+    if (rows.length < 5) return;
+    const pol = name;
+
+    // Find weeks: row 2 (idx 1), starting col 4 (idx 3)
+    const weeks = [];
+    for (let c = 3; c < (rows[1]||[]).length; c++) {
+      const pw = parseWeekLabel(cell(rows,1,c));
+      if (pw) { weeks.push({ col: c, ...pw }); }
+    }
+    if (!weeks.length) return;
+
+    // Check AB/CD tiers
+    let hasABCD = false;
+    for (const w of weeks.slice(0,3)) {
+      const r3 = cell(rows, 2, w.col);
+      if (r3 && String(r3).includes('AB')) { hasABCD = true; break; }
+    }
+    const stride = weeks.length >= 2 ? weeks[1].col - weeks[0].col : 4;
+
+    let curCn = '';
+    for (let r = 4; r < rows.length; r++) {
+      const cv = cell(rows, r, 0);
+      const pv = cell(rows, r, 1);
+      if (cv) { const cc = String(cv).trim(); if (cc && cc.length <= 5 && /^[A-Za-z.]+$/.test(cc)) curCn = cc; }
+      if (!pv) continue;
+      const podPort = String(pv).trim();
+      if (podPort.includes('POD')) continue;
+      const rv = cell(rows, r, 2);
+      const remark = (rv && String(rv).trim() && !/^\d+\.?\d*$/.test(String(rv).trim())) ? String(rv).trim().replace(/\n/g,' ') : '';
+
+      for (const w of weeks) {
+        const c = w.col;
+        if (hasABCD && stride >= 4) {
+          for (const [tier, off] of [['AB',0],['CD',2]]) {
+            const r20 = safeFloat(cell(rows, r, c+off));
+            const r40 = safeFloat(cell(rows, r, c+off+1));
+            if (r20 !== null || r40 !== null) {
+              rates.push({ src:'CN_HK', pol, pod_cn:curCn, pod_port:podPort, week:w.wk, date:w.date, r20, r40, tier, remark });
+            }
+          }
+        } else {
+          const r20 = safeFloat(cell(rows, r, c));
+          const r40 = safeFloat(cell(rows, r, c+1));
+          if (r20 !== null || r40 !== null) {
+            rates.push({ src:'CN_HK', pol, pod_cn:curCn, pod_port:podPort, week:w.wk, date:w.date, r20, r40, tier:'ALL', remark });
+          }
+        }
+      }
+    }
+  });
+  return rates;
+}
+
+// ============ CLEAN ============
+function cleanRates(rates) {
+  const CN_MAP = {'N.CN':'NCN','S.CN':'SCN'};
+  const PORT_NORM = {
+    'Manzalino':'ZLO','Mazzanillo':'ZLO','Manzanillo':'ZLO','LZC(ZLO)':'ZLO',
+    'Long beach':'LGB','Long Beach':'LGB',
+    'DAR ES SALAAM':'DAR','Dar Es Salaam':'DAR',
+    'MOMBASA':'MBA','Mombasa':'MBA',
+    'Aqaba':'AQJ','Aqaba (via SHKPKW)':'AQJ',
+    'Sokhna':'SKN','Sokhna (via SHK/PKW)':'SKN',
+    'Manzanillo':'ZLO','EG':'SKN','AE':'JEA','HK':'HKG',
+    'OM':'SOH','PK':'KHI','TZ':'DAR','KH':'KHI',
+    'JPL':'JPO','HKT':'JPM','MOJ':'JPM',
+    'MIP':'MIP+MNL','MNL':'MIP+MNL','PH':'MIP+MNL',
+    'IN':'NSA','IQ':'UQR','JP':'JPM','KE':'MBA','SG':'SIN',
+    'LK':'CMB','JO':'AQJ','KW':'KSP','SA':'DMM'
+  };
+  const filtered = rates.filter(r => {
+    if (!/^[\x00-\x7F]*$/.test(r.pod_cn)) return false;
+    if (!/^[\x00-\x7F]*$/.test(r.pod_port.replace(/ /g,'').replace(/\n/g,''))) return false;
+    return true;
+  }).map(r => {
+    if (CN_MAP[r.pod_cn]) r.pod_cn = CN_MAP[r.pod_cn];
+    if (PORT_NORM[r.pod_port]) { r.pod_port = PORT_NORM[r.pod_port]; }
+    else {
+      // Strip routing/service/number suffixes: "BKK (HUA via HKG)" -> "BKK"
+      let pm = r.pod_port.match(/^([A-Z]{2,4})[\s(]/);
+      if (!pm) pm = r.pod_port.match(/^([A-Z]{2,4})\s+\d/);
+      if (!pm) pm = r.pod_port.match(/^([A-Z]{2,4})\s+(DIR|T\/S)$/);
+      if (!pm) pm = r.pod_port.match(/^([A-Z]{2,4})\/[A-Z]+ (DIR|T\/S)$/);
+      if (!pm && r.pod_port.includes('\n')) pm = r.pod_port.split('\n')[0].match(/^([A-Z]{2,4})/);
+      if (pm && pm[1] !== r.pod_port) r.pod_port = pm[1];
+    }
+    return r;
+  });
+  // Expand country-code ports to specific ports
+  const EXPAND = {'MY':['PKG','PEN','PGU'],'TH':['BKK','LCH'],'VN':['SGN','HPH'],'ID':['JKT','SUB']};
+  // Split multi-port values (e.g. "MAA,KTP" -> separate records)
+  const result = [];
+  for (const r of filtered) {
+    if (EXPAND[r.pod_port]) {
+      for (const code of EXPAND[r.pod_port]) result.push({...r, pod_port: code});
+      continue;
+    }
+    const parts = r.pod_port.split(/[,\/]/).map(s => s.trim()).filter(s => /^[A-Z]{2,4}$/.test(s));
+    if (parts.length >= 2) {
+      for (const code of parts) {
+        result.push({ ...r, pod_port: code });
+      }
+    } else {
+      result.push(r);
+    }
+  }
+  // Fix pod_cn for ports expanded from country-code entries
+  // Fix pod_cn: port code used as country when it was actually a summary row
+  const PORT_CN_FIX = {
+    'BKK':'TH','LCH':'TH','DAR':'TZ','HKG':'HK','HPH':'VN','SGN':'VN',
+    'JEA':'AE','JKT':'ID','SUB':'ID','KHI':'PK','PEN':'MY','PGU':'MY',
+    'PKG':'MY','SKN':'EG','SOH':'OM','NSA':'IN','UQR':'IQ','JPM':'JP',
+    'JPO':'JP','HOKKAIDO':'JP','MBA':'KE','SIN':'SG','CMB':'LK','AQJ':'JO',
+    'KSP':'BH','DMM':'SA','ZLO':'MX','LGB':'US','VTZ':'IN','MUN':'IN',
+    'MAA':'IN','KTP':'IN','CCU':'IN','COK':'IN','BOM':'IN','HZR':'IN',
+    'TUT':'IN','NNS':'SCN','SHK':'SCN','INC':'KR','PUS':'KR','MIP+MNL':'PH',
+    'RGN':'MM','VVO':'RU','BND':'IR','HMA':'QA'
+  };
+  for (const r of result) {
+    const expected = PORT_CN_FIX[r.pod_port];
+    if (expected && r.pod_cn !== expected && r.pod_cn !== 'CN' && r.pod_cn !== 'NCN' && r.pod_cn !== 'SCN') {
+      r.pod_cn = expected;
+    }
+  }
+  return result;
+}
+
+// ============ LOAD DATA ============
+function setLoadingMsg(msg) {
+  const el = document.getElementById('loadingDiv');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="spinner"></div><p style="margin-top:15px;">${msg}</p>`;
+}
+
+async function loadData(forceRefresh) {
+  // Check cache
+  if (!forceRefresh) {
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL && data.length > 0) {
+          DATA = data;
+          document.getElementById('loadingDiv').style.display = 'none';
+          initFilters();
+
+          const age = Math.round((Date.now() - ts) / 60000);
+          document.getElementById('lastUpdate').textContent =
+            `${DATA.length.toLocaleString()} records | cached ${age}m ago`;
+          return;
+        }
+      }
+    } catch(e) { sessionStorage.removeItem(CACHE_KEY); }
+  }
+
+  try {
+    // Fetch SEA (Excel file on Drive → SheetJS)
+    setLoadingMsg('Downloading SEA rate file...');
+    const sea = await downloadAndParseXlsx(SEA_SHEET_ID);
+    const seaFiltered = sea.sheetNames.filter(n => !SEA_SKIP.includes(n));
+    const seaValsFiltered = seaFiltered.map(n => sea.valuesArr[sea.sheetNames.indexOf(n)]);
+    const seaRates = parseSEA(seaFiltered, seaValsFiltered);
+
+    // Fetch CN_HK (Google Sheet → Sheets API)
+    setLoadingMsg(`SEA: ${seaRates.length} records. Fetching CN/HK...`);
+    const cnhkRanges = CNHK_SHEETS.map(n => `'${n}'`);
+    const cnhkVals = await batchGetValues(CNHK_SHEET_ID, cnhkRanges);
+    const cnhkRates = parseCNHK(CNHK_SHEETS, cnhkVals);
+
+    // Clean
+    setLoadingMsg(`Parsing ${seaRates.length + cnhkRates.length} records...`);
+    DATA = cleanRates([...seaRates, ...cnhkRates]);
+
+    // Cache
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: DATA, ts: Date.now() })); } catch(e) {}
+
+    document.getElementById('loadingDiv').style.display = 'none';
+    initFilters();
+    fetchNews();
+    document.getElementById('lastUpdate').textContent =
+      `${DATA.length.toLocaleString()} records | Live from Google Sheets`;
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingDiv').innerHTML =
+      `<p style="color:#e53935;">Failed to load data: ${e.message}</p>
+       <button class="btn btn-primary" onclick="loadData(true)" style="margin-top:10px;">Retry</button>`;
+  }
+}
+
+function refreshData() {
+  sessionStorage.removeItem(CACHE_KEY);
+  compareItems = [];
+  if (chart) { chart.destroy(); chart = null; }
+  loadData(true);
+}
+
+// ============ FILTERS ============
+function initFilters() {
+  const sources = [...new Set(DATA.map(d => d.src))].sort();
+  fillSelect('fSource', sources, true);
+
+  document.getElementById('fSource').addEventListener('change', () => { updateSourceDesc(); updatePolCnOptions(); });
+  document.getElementById('fPolCn').addEventListener('change', updatePolPortOptions);
+  document.getElementById('fPodCn').addEventListener('change', updatePodPortOptions);
+
+  updateSourceDesc();
+  updatePolCnOptions();
+}
+
+function fillSelect(id, values, keepAll) {
+  const sel = document.getElementById(id);
+  const current = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  values.forEach(v => {
+    if (!v) return;
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+  if (current && values.includes(current)) sel.value = current;
+}
+
+function updateSourceDesc() {
+  const src = document.getElementById('fSource').value;
+  const desc = document.getElementById('sourceDesc');
+  desc.textContent = src ? (SOURCE_DESC[src] || '') : '';
+}
+
+
+function getFiltered(srcFilter) {
+  let filtered = DATA;
+  const src = srcFilter || document.getElementById('fSource').value;
+  if (src) filtered = filtered.filter(d => d.src === src);
+  return filtered;
+}
+
+function getPolCountry(pol) {
+  return POL_COUNTRY_MAP[pol] || '??';
+}
+
+// Extract base port name: "NSA (via JKT/PKW)\nTUT" -> "NSA", "PUS,KAN" -> "PUS"
+function basePort(port) {
+  if (!port) return port;
+  return port.split(/[/,( \n]/)[0].trim();
+}
+
+function updatePolCnOptions() {
+  const filtered = getFiltered();
+  const pols = [...new Set(filtered.map(d => d.pol))];
+  const countries = [...new Set(pols.map(p => getPolCountry(p)))].sort();
+  fillSelect('fPolCn', countries);
+  updatePolPortOptions();
+}
+
+function updatePolPortOptions() {
+  const filtered = getFiltered();
+  const polCn = document.getElementById('fPolCn').value;
+  let pols = [...new Set(filtered.map(d => d.pol))].sort();
+  if (polCn) pols = pols.filter(p => getPolCountry(p) === polCn);
+  buildMultiSelect('msPolPort', pols);
+  updatePodCnOptions();
+}
+
+// ============ MULTI-SELECT ============
+function buildMultiSelect(msId, values) {
+  const state = msState[msId];
+  state.allValues = values;
+  // Keep only still-valid selections
+  state.selected = new Set([...state.selected].filter(v => values.includes(v)));
+  renderMultiSelect(msId);
+}
+
+function renderMultiSelect(msId) {
+  const state = msState[msId];
+  const dd = document.querySelector(`#${msId} .ms-dropdown`);
+  const allChecked = state.selected.size === 0; // empty = all
+  let html = `<label class="ms-item ms-all"><input type="checkbox" ${allChecked ? 'checked' : ''} onchange="msToggleAll('${msId}', this.checked)"> All</label>`;
+  state.allValues.forEach((v, i) => {
+    const checked = state.selected.has(v) ? 'checked' : '';
+    html += `<label class="ms-item"><input type="checkbox" data-idx="${i}" ${checked} onchange="msToggleIdx('${msId}',${i},this.checked)"> ${v}</label>`;
+  });
+  dd.innerHTML = html;
+  // Update trigger label
+  const label = document.querySelector(`#${msId} .ms-label`);
+  if (state.selected.size === 0) {
+    label.innerHTML = 'All';
+  } else if (state.selected.size <= 2) {
+    label.innerHTML = [...state.selected].join(', ');
+  } else {
+    label.innerHTML = `${[...state.selected].slice(0,2).join(', ')} <span class="ms-count">+${state.selected.size - 2}</span>`;
+  }
+}
+
+function toggleMultiSelect(msId) {
+  const el = document.getElementById(msId);
+  el.classList.toggle('open');
+}
+
+function msToggleAll(msId, checked) {
+  const state = msState[msId];
+  state.selected.clear(); // empty = all
+  renderMultiSelect(msId);
+  updatePodCnOptions();
+}
+
+function msToggleIdx(msId, idx, checked) {
+  const state = msState[msId];
+  const val = state.allValues[idx];
+  if (checked) {
+    state.selected.add(val);
+    if (state.selected.size === state.allValues.length) state.selected.clear();
+  } else {
+    if (state.selected.size === 0) {
+      state.allValues.forEach(v => { if (v !== val) state.selected.add(v); });
+    } else {
+      state.selected.delete(val);
+      if (state.selected.size === 0) state.selected.clear();
+    }
+  }
+  renderMultiSelect(msId);
+  updatePodCnOptions();
+}
+
+// Close multi-select on outside click
+document.addEventListener('click', e => {
+  document.querySelectorAll('.multi-select.open').forEach(ms => {
+    if (!ms.contains(e.target)) ms.classList.remove('open');
+  });
+});
+
+function getSelectedPols() {
+  const state = msState.msPolPort;
+  return state.selected.size === 0 ? [...state.allValues] : [...state.selected];
+}
+
+function updatePodCnOptions() {
+  let filtered = getFiltered();
+  const selectedPols = getSelectedPols();
+  if (selectedPols.length > 0 && selectedPols.length < msState.msPolPort.allValues.length) {
+    filtered = filtered.filter(d => selectedPols.includes(d.pol));
+  }
+  const countries = [...new Set(filtered.map(d => d.pod_cn))].filter(Boolean).sort();
+  fillSelect('fPodCn', countries);
+  updatePodPortOptions();
+}
+
+function updatePodPortOptions() {
+  let filtered = getFiltered();
+  const selectedPols = getSelectedPols();
+  const cn = document.getElementById('fPodCn').value;
+  if (selectedPols.length > 0 && selectedPols.length < msState.msPolPort.allValues.length) {
+    filtered = filtered.filter(d => selectedPols.includes(d.pol));
+  }
+  if (cn) filtered = filtered.filter(d => d.pod_cn === cn);
+  const ports = [...new Set(filtered.map(d => basePort(d.pod_port)))].filter(Boolean).sort();
+  fillSelect('fPodPort', ports);
+}
+
+// ============ COMPARE ============
+function searchRoutes() {
+  compareItems = [];
+  addToCompare();
+}
+
+function addToCompare() {
+  const selectedPols = getSelectedPols();
+  const podCn = document.getElementById('fPodCn').value;
+  const podPort = document.getElementById('fPodPort').value;
+  const container = document.getElementById('fContainer').value;
+
+  if (selectedPols.length === 0) { alert('POL(Origin)을 선택하세요.'); return; }
+  if (!podCn && !podPort) { alert('POD Country 또는 Port를 선택하세요.'); return; }
+
+  // Add one entry per selected POL
+  selectedPols.forEach(pol => {
+    // Auto tier: CN_HK=CD, SEA=ALL
+    const polSrc = DATA.find(d => d.pol === pol)?.src;
+    const tier = (polSrc === 'CN_HK') ? 'CD' : 'ALL';
+
+    const key = `${pol}>${podCn||'*'}>${podPort||'*'}|${tier}|${container}`;
+    if (compareItems.find(c => c.key === key)) return;
+
+    compareItems.push({
+      key, pol, podCn, podPort, tier, container,
+      label: `${pol} -> ${podPort || podCn} (${container === 'r20' ? "20'" : "40'"})`
+    });
+  });
+
+  renderCompare();
+  updateChart();
+}
+
+function removeCompare(idx) {
+  compareItems.splice(idx, 1);
+  renderCompare();
+  updateChart();
+}
+
+function clearCompare() {
+  compareItems = [];
+  renderCompare();
+  updateChart();
+}
+
+function renderCompare() {
+  const panel = document.getElementById('comparePanel');
+  const tags = document.getElementById('compareTags');
+  if (compareItems.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  tags.innerHTML = compareItems.map((c, i) =>
+    `<span class="tag" style="background:${COLORS[i % COLORS.length]}22; color:${COLORS[i % COLORS.length]}; border:1px solid ${COLORS[i % COLORS.length]}44;">
+      ${c.label} <span class="remove" onclick="removeCompare(${i})">x</span>
+    </span>`
+  ).join('');
+}
+
+// ============ GET SERIES DATA ============
+function getSeriesData(item) {
+  let filtered = DATA.filter(d => d.pol === item.pol);
+  if (item.podCn) filtered = filtered.filter(d => d.pod_cn === item.podCn);
+  if (item.podPort && item.podPort !== '*') {
+    filtered = filtered.filter(d => basePort(d.pod_port) === item.podPort);
+  }
+  if (item.tier && item.tier !== '' && item.tier !== 'ALL') {
+    filtered = filtered.filter(d => d.tier === item.tier);
+  }
+
+  // Group by week, take average if multiple
+  const weekMap = {};
+  filtered.forEach(d => {
+    const val = d[item.container];
+    if (val === null || val === undefined) return;
+    if (!weekMap[d.week]) weekMap[d.week] = { sum: 0, count: 0, date: d.date };
+    weekMap[d.week].sum += val;
+    weekMap[d.week].count++;
+  });
+
+  const points = Object.entries(weekMap)
+    .map(([wk, v]) => ({ week: wk, date: v.date, value: Math.round(v.sum / v.count) }))
+    .sort((a, b) => a.week.localeCompare(b.week));
+
+  // Get remark for this route (from first matching record that has one)
+  const remarkRec = filtered.find(d => d.remark);
+  const remark = remarkRec ? remarkRec.remark : '';
+
+  return { points, remark };
+}
+
+// ============ CHART ============
+function updateChart() {
+  if (compareItems.length === 0) {
+    if (chart) { chart.destroy(); chart = null; }
+    document.getElementById('statsRow').innerHTML = '';
+    document.getElementById('tableHeader').innerHTML = '';
+    document.getElementById('tableBody').innerHTML = '';
+    return;
+  }
+
+  const allSeries = compareItems.map((item, i) => {
+    const { points, remark } = getSeriesData(item);
+    return { item, points, remark, color: COLORS[i % COLORS.length] };
+  });
+
+  // Get union of all weeks
+  const allWeeks = [...new Set(allSeries.flatMap(s => s.points.map(p => p.week)))].sort();
+
+  // Apply range filter
+  let weeks = allWeeks;
+  if (currentRange !== 'all') {
+    const n = parseInt(currentRange);
+    weeks = allWeeks.slice(-n);
+  }
+
+  // Build chart datasets
+  const datasets = allSeries.map(s => ({
+    label: s.item.label,
+    data: weeks.map(w => {
+      const p = s.points.find(p => p.week === w);
+      return p ? p.value : null;
+    }),
+    borderColor: s.color,
+    backgroundColor: s.color + '20',
+    borderWidth: 2,
+    pointRadius: weeks.length > 60 ? 0 : 3,
+    pointHoverRadius: 5,
+    tension: 0.3,
+    spanGaps: true
+  }));
+
+  const labels = weeks.map(w => {
+    const parts = w.split('-W');
+    if (parts.length !== 2) return w;
+    return `W${parts[1]} '${parts[0].slice(2)}`;
+  });
+
+  if (chart) chart.destroy();
+  const ctx = document.getElementById('rateChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true, padding: 15 } },
+        tooltip: {
+          itemSort: (a, b) => {
+            const va = a.raw ?? -Infinity;
+            const vb = b.raw ?? -Infinity;
+            return vb - va;
+          },
+          filter: (item) => item.raw != null,
+          callbacks: {
+            title: (items) => weeks[items[0].dataIndex],
+            label: (item) => `${item.dataset.label}: $${item.raw?.toLocaleString()}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          title: { display: true, text: 'USD' },
+          ticks: { callback: v => '$' + v.toLocaleString() }
+        },
+        x: {
+          ticks: { maxTicksLimit: 20 }
+        }
+      }
+    }
+  });
+
+  updateStats(allSeries);
+  updateTable(allSeries, weeks);
+}
+
+function setRange(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentRange = el.dataset.range;
+  updateChart();
+}
+
+// ============ STATS ============
+function updateStats(allSeries) {
+  const html = allSeries.map(s => {
+    const pts = s.points;
+    if (pts.length < 2) return '';
+    const latest = pts[pts.length - 1].value;
+    const prev = pts[pts.length - 2].value;
+    const diff = latest - prev;
+    const pct = prev !== 0 ? ((diff / prev) * 100).toFixed(1) : 0;
+    const min = Math.min(...pts.map(p => p.value));
+    const max = Math.max(...pts.map(p => p.value));
+    const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+    const arrow = diff > 0 ? '&#9650;' : diff < 0 ? '&#9660;' : '&#8211;';
+
+    const remarkHtml = s.remark
+      ? `<div style="font-size:11px; color:#1a237e; margin-top:6px; padding:4px 8px; background:#e8eaf6; border-radius:4px; line-height:1.4;">${s.remark}</div>`
+      : '';
+
+    return `<div class="stat-card">
+      <div class="label">${s.item.label}</div>
+      <div class="value" style="color:${s.color}">$${latest.toLocaleString()}</div>
+      <div class="change ${cls}">${arrow} $${Math.abs(diff).toLocaleString()} (${pct}%) vs prev week</div>
+      <div style="font-size:12px; color:#888; margin-top:5px;">Range: $${min.toLocaleString()} ~ $${max.toLocaleString()}</div>
+      ${remarkHtml}
+    </div>`;
+  }).join('');
+  document.getElementById('statsRow').innerHTML = html;
+}
+
+// ============ TABLE ============
+let lastTableSeries = [];
+let lastTableWeeks = [];
+let colSortWeek = null; // week string clicked for column sort, null = default (POD country)
+
+function updateTable(allSeries, weeks) {
+  lastTableSeries = allSeries;
+  lastTableWeeks = weeks;
+  colSortWeek = null;
+  renderTable();
+}
+
+function getColOrder() {
+  const allSeries = lastTableSeries;
+  const order = allSeries.map((s, i) => i);
+
+  if (colSortWeek) {
+    // Sort columns by rate of that week, descending
+    order.sort((a, b) => {
+      const pa = allSeries[a].points.find(p => p.week === colSortWeek);
+      const pb = allSeries[b].points.find(p => p.week === colSortWeek);
+      const va = pa ? pa.value : -1;
+      const vb = pb ? pb.value : -1;
+      return vb - va;
+    });
+  } else {
+    // Default: sort by POD country, then POD port, then POL
+    order.sort((a, b) => {
+      const ia = allSeries[a].item, ib = allSeries[b].item;
+      return (ia.podCn || '').localeCompare(ib.podCn || '')
+        || (ia.podPort || '').localeCompare(ib.podPort || '')
+        || (ia.pol || '').localeCompare(ib.pol || '');
+    });
+  }
+  return order;
+}
+
+function renderTable() {
+  const allSeries = lastTableSeries;
+  const weeks = lastTableWeeks;
+  const last20 = weeks.slice(-20).reverse();
+  const colOrder = getColOrder();
+
+  // Header
+  let header = '<th>Week</th>';
+  colOrder.forEach(ci => {
+    const s = allSeries[ci];
+    header += `<th style="color:${s.color}">${s.item.label}</th>`;
+  });
+  document.getElementById('tableHeader').innerHTML = header;
+
+  // Body
+  let body = '';
+  last20.forEach((w, wi) => {
+    const isActive = colSortWeek === w;
+    body += `<tr>`;
+    body += `<td style="font-weight:600; cursor:pointer; ${isActive ? 'background:#e8eaf6;' : ''}" onclick="sortColsByWeek('${w}')">${w}${isActive ? ' &#9660;' : ''}</td>`;
+    colOrder.forEach(ci => {
+      const s = allSeries[ci];
+      const p = s.points.find(p => p.week === w);
+      const val = p ? p.value : null;
+
+      // prev week arrow
+      const nextW = last20[wi + 1];
+      const prevP = nextW ? s.points.find(p => p.week === nextW) : null;
+      const prevVal = prevP ? prevP.value : null;
+
+      let cls = '';
+      let arrow = '';
+      if (val !== null && prevVal !== null) {
+        const d = val - prevVal;
+        if (d > 0) { cls = 'rate-up'; arrow = ' &#9650;'; }
+        else if (d < 0) { cls = 'rate-down'; arrow = ' &#9660;'; }
+      }
+
+      body += `<td class="${cls}">${val !== null ? '$' + val.toLocaleString() + arrow : '-'}</td>`;
+    });
+    body += '</tr>';
+  });
+  document.getElementById('tableBody').innerHTML = body;
+}
+
+function sortColsByWeek(week) {
+  colSortWeek = (colSortWeek === week) ? null : week;
+  renderTable();
+}
+
+// ============ INIT ============
+// loadData() is called from showApp() after Google auth
+</script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KMTC Rate Dashboard - User Guide</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f5f6fa; color: #333; line-height: 1.7; }
+.top-bar { background: linear-gradient(135deg, #1a237e, #283593); color: white; padding: 20px 30px; position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+.top-bar h1 { font-size: 20px; }
+.top-bar .right-area { display: flex; align-items: center; gap: 12px; }
+.top-bar a { color: white; text-decoration: none; background: rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 6px; font-size: 13px; }
+.top-bar a:hover { background: rgba(255,255,255,0.25); }
+.lang-toggle { display: flex; gap: 0; }
+.lang-btn { color: white; background: rgba(255,255,255,0.15); border: none; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.lang-btn:first-child { border-radius: 6px 0 0 6px; }
+.lang-btn:last-child { border-radius: 0 6px 6px 0; }
+.lang-btn.active { background: rgba(255,255,255,0.4); font-weight: 700; }
+.lang-btn:hover { background: rgba(255,255,255,0.3); }
+.wrapper { max-width: 960px; margin: 0 auto; padding: 30px 20px 60px; }
+.toc { background: white; border-radius: 10px; padding: 25px 30px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.toc h2 { font-size: 16px; margin-bottom: 12px; color: #1a237e; }
+.toc ol { padding-left: 20px; }
+.toc li { margin-bottom: 6px; }
+.toc a { color: #1a237e; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+section { background: white; border-radius: 10px; padding: 30px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+section h2 { font-size: 18px; color: #1a237e; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e8eaf6; }
+section h3 { font-size: 15px; color: #333; margin: 18px 0 8px; }
+p { margin-bottom: 12px; }
+ul, ol { margin-left: 20px; margin-bottom: 12px; }
+li { margin-bottom: 4px; }
+code { background: #f0f2f5; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+.note { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 15px 0; font-size: 14px; }
+.note strong { color: #f57f17; }
+
+/* Language visibility */
+[data-lang="en"] { display: none; }
+[data-lang="ko"] { display: block; }
+span[data-lang="ko"], a[data-lang="ko"], strong[data-lang="ko"], td[data-lang="ko"], th[data-lang="ko"], li[data-lang="ko"], p[data-lang="ko"], div[data-lang="ko"] { display: inline; }
+span[data-lang="en"], a[data-lang="en"], strong[data-lang="en"], td[data-lang="en"], th[data-lang="en"], li[data-lang="en"], p[data-lang="en"], div[data-lang="en"] { display: none; }
+body.lang-en [data-lang="en"] { display: block; }
+body.lang-en [data-lang="ko"] { display: none; }
+body.lang-en span[data-lang="en"], body.lang-en a[data-lang="en"], body.lang-en strong[data-lang="en"], body.lang-en td[data-lang="en"], body.lang-en th[data-lang="en"], body.lang-en li[data-lang="en"], body.lang-en p[data-lang="en"], body.lang-en div[data-lang="en"] { display: inline; }
+body.lang-en span[data-lang="ko"], body.lang-en a[data-lang="ko"], body.lang-en strong[data-lang="ko"], body.lang-en td[data-lang="ko"], body.lang-en th[data-lang="ko"], body.lang-en li[data-lang="ko"], body.lang-en p[data-lang="ko"], body.lang-en div[data-lang="ko"] { display: none; }
+/* Block-level overrides */
+section[data-lang="ko"], div[data-lang="ko"], p[data-lang="ko"] { display: block; }
+section[data-lang="en"] { display: none; }
+body.lang-en section[data-lang="en"], body.lang-en div[data-lang="en"], body.lang-en p[data-lang="en"] { display: block; }
+body.lang-en section[data-lang="ko"], body.lang-en div[data-lang="ko"], body.lang-en p[data-lang="ko"] { display: none; }
+/* List items */
+li[data-lang="ko"] { display: list-item; }
+li[data-lang="en"] { display: none; }
+body.lang-en li[data-lang="en"] { display: list-item; }
+body.lang-en li[data-lang="ko"] { display: none; }
+/* Table cells */
+td[data-lang="ko"], th[data-lang="ko"] { display: table-cell; }
+td[data-lang="en"], th[data-lang="en"] { display: none; }
+body.lang-en td[data-lang="en"], body.lang-en th[data-lang="en"] { display: table-cell; }
+body.lang-en td[data-lang="ko"], body.lang-en th[data-lang="ko"] { display: none; }
+/* Table rows */
+tr[data-lang="ko"] { display: table-row; }
+tr[data-lang="en"] { display: none; }
+body.lang-en tr[data-lang="en"] { display: table-row; }
+body.lang-en tr[data-lang="ko"] { display: none; }
+
+/* Screenshot mockups */
+.mock { border: 1px solid #ddd; border-radius: 10px; overflow: hidden; margin: 18px 0; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.mock-bar { background: #e8eaf6; padding: 6px 12px; font-size: 11px; color: #666; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 6px; }
+.mock-bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.mock-bar .dot.r { background: #e53935; } .mock-bar .dot.y { background: #ffc107; } .mock-bar .dot.g { background: #43a047; }
+.mock-body { padding: 0; background: #f0f2f5; }
+
+/* Inline mock components */
+.m-header { background: linear-gradient(135deg, #1a237e, #283593); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.m-header h3 { font-size: 16px; font-weight: 600; margin: 0; }
+.m-header .m-user { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 15px; font-size: 12px; }
+.m-header .m-avatar { width: 22px; height: 22px; border-radius: 50%; background: #90caf9; }
+.m-filters { background: white; padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; border-bottom: 1px solid #eee; }
+.m-fg { display: flex; flex-direction: column; gap: 3px; }
+.m-fg label { font-size: 10px; font-weight: 600; color: #888; text-transform: uppercase; }
+.m-fg select, .m-fg .m-ms { padding: 5px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; min-width: 100px; background: white; appearance: auto; }
+.m-fg .m-ms { cursor: default; color: #333; }
+.m-btn { padding: 5px 14px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: default; }
+.m-btn-pri { background: #1a237e; color: white; }
+.m-btn-add { background: #4caf50; color: white; font-size: 16px; padding: 3px 10px; }
+.m-btn-sec { background: #e8eaf6; color: #1a237e; }
+.m-tags { padding: 10px 18px; background: white; display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid #eee; }
+.m-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 500; }
+.m-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px 18px; }
+.m-stat { background: white; border-radius: 8px; padding: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.m-stat .m-label { font-size: 10px; color: #888; text-transform: uppercase; }
+.m-stat .m-val { font-size: 20px; font-weight: 700; margin-top: 3px; }
+.m-stat .m-chg { font-size: 11px; margin-top: 2px; }
+.m-stat .m-remark { font-size: 10px; color: #1a237e; margin-top: 5px; padding: 3px 6px; background: #e8eaf6; border-radius: 3px; }
+.m-chart { background: white; margin: 0 18px; border-radius: 8px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 14px; }
+.m-chart h4 { font-size: 13px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.m-chart .m-chips { display: flex; gap: 5px; }
+.m-chip { padding: 2px 10px; border-radius: 12px; font-size: 11px; border: 1px solid #ddd; background: white; }
+.m-chip.active { background: #1a237e; color: white; border-color: #1a237e; }
+.m-chart-area { height: 100px; background: linear-gradient(to right, #e8eaf6, #f5f5f5); border-radius: 6px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 0 10px; gap: 2px; }
+.m-line { position: absolute; height: 2px; border-radius: 1px; top: 30%; left: 5%; right: 5%; }
+.m-table-wrap { background: white; margin: 0 18px 18px; border-radius: 8px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow-x: auto; }
+.m-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.m-table th { background: #f5f5f5; padding: 6px 8px; text-align: left; font-weight: 600; }
+.m-table td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; }
+.m-table .m-up { color: #e53935; } .m-table .m-dn { color: #43a047; }
+.m-table .m-week-active { background: #e8eaf6; font-weight: 700; cursor: pointer; }
+
+/* Auth mock */
+.m-auth { display: flex; align-items: center; justify-content: center; height: 240px; background: linear-gradient(135deg, #1a237e, #283593); }
+.m-auth-box { background: white; border-radius: 12px; padding: 30px 25px; text-align: center; width: 280px; }
+.m-auth-box h3 { font-size: 16px; color: #1a237e; margin-bottom: 5px; }
+.m-auth-box p { font-size: 12px; color: #888; margin-bottom: 18px; }
+.m-google-btn { display: inline-flex; align-items: center; gap: 10px; padding: 9px 20px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-weight: 500; background: white; }
+.m-google-btn .g-icon { width: 18px; height: 18px; border-radius: 2px; background: conic-gradient(#4285f4 0deg 90deg, #34a853 90deg 180deg, #fbbc05 180deg 270deg, #ea4335 270deg 360deg); }
+
+/* Callout arrows */
+.callout { position: relative; border: 2px solid #e53935; border-radius: 8px; padding: 3px; margin: 18px 0; }
+.callout-label { position: absolute; top: -12px; left: 16px; background: #e53935; color: white; font-size: 11px; font-weight: 600; padding: 1px 10px; border-radius: 10px; }
+.callout-label.blue { background: #1a237e; }
+.callout.blue { border-color: #1a237e; }
+.callout.green { border-color: #43a047; }
+.callout-label.green { background: #43a047; }
+
+.step-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #1a237e; color: white; font-size: 13px; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
+.step { display: flex; align-items: flex-start; gap: 4px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1><span data-lang="ko">사용 가이드</span><span data-lang="en">User Guide</span></h1>
+  <div class="right-area">
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-ko" onclick="setLang('ko')">KO</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+    <a href="." onclick="history.back(); return false;"><span data-lang="ko">대시보드로 돌아가기</span><span data-lang="en">Back to Dashboard</span></a>
+  </div>
+</div>
+
+<div class="wrapper">
+
+<!-- Table of Contents -->
+<div class="toc">
+  <h2><span data-lang="ko">목차</span><span data-lang="en">Table of Contents</span></h2>
+  <ol>
+    <li><a href="#login"><span data-lang="ko">로그인</span><span data-lang="en">Sign In</span></a></li>
+    <li><a href="#overview"><span data-lang="ko">대시보드 개요</span><span data-lang="en">Dashboard Overview</span></a></li>
+    <li><a href="#filters"><span data-lang="ko">필터 사용법</span><span data-lang="en">Using Filters</span></a></li>
+    <li><a href="#search"><span data-lang="ko">조회 및 비교</span><span data-lang="en">Search &amp; Compare</span></a></li>
+    <li><a href="#stats"><span data-lang="ko">운임 요약 카드</span><span data-lang="en">Rate Summary Cards</span></a></li>
+    <li><a href="#chart"><span data-lang="ko">운임 추이 차트</span><span data-lang="en">Rate Trend Chart</span></a></li>
+    <li><a href="#table"><span data-lang="ko">운임 이력 테이블</span><span data-lang="en">Rate History Table</span></a></li>
+    <li><a href="#signout"><span data-lang="ko">로그아웃</span><span data-lang="en">Sign Out</span></a></li>
+  </ol>
+</div>
+
+<!-- 1. Sign In -->
+<section id="login">
+  <h2><span data-lang="ko">1. 로그인</span><span data-lang="en">1. Sign In</span></h2>
+  <p data-lang="ko">대시보드를 열면 로그인 화면이 나타납니다. <strong>"Sign in with Google"</strong> 버튼을 클릭하고 회사 Google 계정으로 로그인하세요.</p>
+  <p data-lang="en">When you open the dashboard, a login screen appears. Click the <strong>"Sign in with Google"</strong> button and sign in with your company Google account.</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> localhost:8080</div>
+    <div class="mock-body">
+      <div class="m-auth">
+        <div class="m-auth-box">
+          <h3>KMTC Freight Rate Dashboard</h3>
+          <p>Sign in with your company Google account</p>
+          <div class="callout blue" style="display:inline-block; margin:0;">
+            <span class="callout-label blue"><span data-lang="ko">여기를 클릭</span><span data-lang="en">Click here</span></span>
+            <div class="m-google-btn">
+              <div class="g-icon"></div>
+              Sign in with Google
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong data-lang="ko">참고:</strong><strong data-lang="en">Note:</strong>
+    <span data-lang="ko"> 승인된 Google 계정만 대시보드에 접근할 수 있습니다. 승인되지 않은 계정은 오류 메시지가 표시됩니다.</span>
+    <span data-lang="en"> Only authorized Google accounts can access the dashboard. If your account is not permitted, an error message will appear.</span>
+  </div>
+</section>
+
+<!-- 2. Overview -->
+<section id="overview">
+  <h2><span data-lang="ko">2. 대시보드 개요</span><span data-lang="en">2. Dashboard Overview</span></h2>
+  <p data-lang="ko">로그인 후 전체 대시보드가 표시됩니다. 대시보드는 네 가지 주요 영역으로 구성됩니다:</p>
+  <p data-lang="en">After signing in, the full dashboard is displayed. It consists of four main areas:</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> KMTC Freight Rate Dashboard</div>
+    <div class="mock-body">
+      <div class="callout blue" style="margin:0;">
+        <span class="callout-label blue"><span data-lang="ko">A. 헤더</span><span data-lang="en">A. Header</span></span>
+        <div class="m-header">
+          <div><h3>KMTC Freight Rate Dashboard</h3><span style="font-size:11px; opacity:0.7;">Weekly Rate Tracking &amp; Trend Analysis</span></div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:11px; opacity:0.7;">117,323 records</span>
+            <div class="m-user"><div class="m-avatar"></div> J. Park</div>
+          </div>
+        </div>
+      </div>
+      <div class="callout green" style="margin:4px 0 0;">
+        <span class="callout-label green"><span data-lang="ko">B. 필터</span><span data-lang="en">B. Filters</span></span>
+        <div class="m-filters">
+          <div class="m-fg"><label>Source</label><select><option>All</option></select></div>
+          <div class="m-fg"><label>POL Country</label><select><option>All</option></select></div>
+          <div class="m-fg"><label>POL Port</label><div class="m-ms">All</div></div>
+          <div class="m-fg"><label>POD Country</label><select><option>KR</option></select></div>
+          <div class="m-fg"><label>POD Port</label><select><option>PUS</option></select></div>
+          <div class="m-fg"><label>Container</label><select><option>40ft</option></select></div>
+          <span class="m-btn m-btn-pri">Search</span>
+          <span class="m-btn m-btn-add">+</span>
+          <span class="m-btn m-btn-sec">Clear All</span>
+        </div>
+      </div>
+      <div style="padding:10px 18px; font-size:12px; color:#888; text-align:center;">
+        <span data-lang="ko">C. 운임 요약 &nbsp; | &nbsp; D. 추이 차트 &nbsp; | &nbsp; E. 이력 테이블 &nbsp; (아래 참조)</span>
+        <span data-lang="en">C. Rate Summary &nbsp; | &nbsp; D. Trend Chart &nbsp; | &nbsp; E. History Table &nbsp; (shown below)</span>
+      </div>
+    </div>
+  </div>
+
+  <ul data-lang="ko">
+    <li><strong>A. 헤더</strong> &mdash; 제목, 레코드 수, 프로필 (클릭하여 로그아웃)</li>
+    <li><strong>B. 필터</strong> &mdash; 루트 조건을 선택하고 조회</li>
+    <li><strong>C. 운임 요약</strong> &mdash; 루트별 주요 통계</li>
+    <li><strong>D. 추이 차트</strong> &mdash; 시간에 따른 운임 추이 시각화</li>
+    <li><strong>E. 이력 테이블</strong> &mdash; 주간 운임 데이터 및 정렬</li>
+  </ul>
+  <ul data-lang="en">
+    <li><strong>A. Header</strong> &mdash; Title, record count, and your profile (click to sign out)</li>
+    <li><strong>B. Filters</strong> &mdash; Select route criteria and search</li>
+    <li><strong>C. Rate Summary</strong> &mdash; Key statistics per route</li>
+    <li><strong>D. Trend Chart</strong> &mdash; Visual rate history over time</li>
+    <li><strong>E. History Table</strong> &mdash; Weekly rate data with sorting</li>
+  </ul>
+</section>
+
+<!-- 3. Filters -->
+<section id="filters">
+  <h2><span data-lang="ko">3. 필터 사용법</span><span data-lang="en">3. Using Filters</span></h2>
+  <p data-lang="ko">필터는 캐스케이딩(계단식) 방식으로 작동합니다 &mdash; 각 선택에 따라 다음 필터의 옵션이 자동으로 좁혀집니다.</p>
+  <p data-lang="en">Filters work in a cascading manner &mdash; each selection narrows down the options in the next filter.</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> <span data-lang="ko">필터 패널</span><span data-lang="en">Filter Panel</span></div>
+    <div class="mock-body" style="background:white; padding:16px;">
+      <div style="display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start;">
+        <div class="m-fg">
+          <label style="font-size:10px; font-weight:600; color:#888;">1. SOURCE</label>
+          <select style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; min-width:100px;">
+            <option>All</option>
+          </select>
+          <div style="font-size:10px; color:#999; margin-top:2px;">SEA = SE Asia/ME<br>CN_HK = China/HK</div>
+        </div>
+        <div style="font-size:18px; color:#ccc; align-self:center;">&#8594;</div>
+        <div class="m-fg">
+          <label style="font-size:10px; font-weight:600; color:#888;">2. POL COUNTRY</label>
+          <select style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; min-width:100px;">
+            <option>VN</option>
+          </select>
+        </div>
+        <div style="font-size:18px; color:#ccc; align-self:center;">&#8594;</div>
+        <div class="m-fg">
+          <label style="font-size:10px; font-weight:600; color:#888;">3. POL PORT</label>
+          <div style="padding:5px 8px; border:1px solid #1a237e; border-radius:4px; font-size:12px; min-width:120px; background:white;">
+            &#9745; VN HPH<br>&#9745; VN SGN
+          </div>
+          <div style="font-size:10px; color:#1a237e; margin-top:2px;"><span data-lang="ko">다중 선택 가능</span><span data-lang="en">Multi-select enabled</span></div>
+        </div>
+        <div style="font-size:18px; color:#ccc; align-self:center;">&#8594;</div>
+        <div class="m-fg">
+          <label style="font-size:10px; font-weight:600; color:#888;">4. POD COUNTRY</label>
+          <select style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; min-width:100px;">
+            <option>KR</option>
+          </select>
+        </div>
+        <div style="font-size:18px; color:#ccc; align-self:center;">&#8594;</div>
+        <div class="m-fg">
+          <label style="font-size:10px; font-weight:600; color:#888;">5. POD PORT</label>
+          <select style="padding:5px 8px; border:1px solid #ddd; border-radius:4px; font-size:12px; min-width:100px;">
+            <option>PUS</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3><span data-lang="ko">필터 설명</span><span data-lang="en">Filter Descriptions</span></h3>
+  <table style="width:100%; border-collapse:collapse; font-size:14px; margin:10px 0;">
+    <tr data-lang="ko" style="background:#f5f5f5;"><th style="padding:8px; text-align:left;">필터</th><th style="padding:8px; text-align:left;">설명</th></tr>
+    <tr data-lang="en" style="background:#f5f5f5;"><th style="padding:8px; text-align:left;">Filter</th><th style="padding:8px; text-align:left;">Description</th></tr>
+    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>Source</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">데이터 소스 파일. <code>SEA</code> = 동남아, 중동 등. <code>CN_HK</code> = 중국, 홍콩.</td></tr>
+    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>Source</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Data source file. <code>SEA</code> = Southeast Asia, Middle East, etc. <code>CN_HK</code> = China, Hong Kong.</td></tr>
+    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POL Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">적하항(출발지) 국가. 예: VN, CN, ID</td></tr>
+    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POL Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Country of the Port of Loading (origin). e.g. VN, CN, ID</td></tr>
+    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POL Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">특정 적하항. <strong>다중 선택</strong> &mdash; 여러 항구 또는 "All"을 체크할 수 있습니다.</td></tr>
+    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POL Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Specific loading port(s). <strong>Multi-select</strong> &mdash; check multiple ports or "All".</td></tr>
+    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">양하항(도착지) 국가 코드. 예: KR, JP, IN</td></tr>
+    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Destination country code. e.g. KR, JP, IN</td></tr>
+    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">특정 양하항. 포트명은 정규화되어 통합됩니다 (예: NSA 변형은 모두 통합).</td></tr>
+    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Specific destination port. Base port names are normalized (e.g. all NSA variants unified).</td></tr>
+    <tr data-lang="ko"><td style="padding:8px;"><strong>Container</strong></td><td style="padding:8px;">컨테이너 크기: 40ft 또는 20ft.</td></tr>
+    <tr data-lang="en"><td style="padding:8px;"><strong>Container</strong></td><td style="padding:8px;">Container size: 40ft or 20ft.</td></tr>
+  </table>
+
+  <div class="note">
+    <strong data-lang="ko">참고:</strong><strong data-lang="en">Tip:</strong>
+    <span data-lang="ko"> Customer tier는 자동 적용됩니다 &mdash; CN/HK 루트에는 <code>CD</code>, SEA 루트에는 <code>ALL</code>. 수동 선택이 필요 없습니다.</span>
+    <span data-lang="en"> Customer tier is applied automatically &mdash; <code>CD</code> for CN/HK routes, <code>ALL</code> for SEA routes. No manual selection needed.</span>
+  </div>
+</section>
+
+<!-- 4. Search & Compare -->
+<section id="search">
+  <h2><span data-lang="ko">4. 조회 및 비교</span><span data-lang="en">4. Search &amp; Compare</span></h2>
+  <p data-lang="ko">운임을 조회하는 두 가지 방법이 있습니다:</p>
+  <p data-lang="en">There are two ways to view rates:</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin:15px 0;">
+    <div style="border:2px solid #1a237e; border-radius:10px; padding:18px; text-align:center;">
+      <div style="font-size:28px; margin-bottom:6px;"><span class="m-btn m-btn-pri" style="font-size:16px; padding:8px 20px;">Search</span></div>
+      <strong style="color:#1a237e;"><span data-lang="ko">새로 조회</span><span data-lang="en">New Search</span></strong>
+      <p style="font-size:13px; margin-top:8px;" data-lang="ko">이전 결과를 모두 지우고 현재 필터 조건만 표시합니다. 다른 도착지로 변경할 때 사용하세요.</p>
+      <p style="font-size:13px; margin-top:8px;" data-lang="en">Clears all previous results and displays only the current filter selection. Use this when changing to a different destination.</p>
+    </div>
+    <div style="border:2px solid #4caf50; border-radius:10px; padding:18px; text-align:center;">
+      <div style="font-size:28px; margin-bottom:6px;"><span class="m-btn m-btn-add" style="font-size:22px; padding:6px 16px;">+</span></div>
+      <strong style="color:#4caf50;"><span data-lang="ko">비교 추가</span><span data-lang="en">Add to Compare</span></strong>
+      <p style="font-size:13px; margin-top:8px;" data-lang="ko">기존 결과를 유지하면서 현재 필터 조건을 추가합니다. 루트를 나란히 비교할 때 사용하세요.</p>
+      <p style="font-size:13px; margin-top:8px;" data-lang="en">Keeps existing results and adds the current filter selection on top. Use this to compare routes side by side.</p>
+    </div>
+  </div>
+
+  <h3><span data-lang="ko">비교 태그</span><span data-lang="en">Comparison Tags</span></h3>
+  <p data-lang="ko">활성 루트는 필터 바 아래에 색상 태그로 표시됩니다. <strong>x</strong>를 클릭하여 루트를 제거하거나, <strong>Clear All</strong>로 초기화할 수 있습니다.</p>
+  <p data-lang="en">Active routes appear as colored tags below the filter bar. Click <strong>x</strong> to remove a route, or <strong>Clear All</strong> to reset.</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> <span data-lang="ko">루트 비교</span><span data-lang="en">Comparing Routes</span></div>
+    <div class="mock-body" style="background:white; padding:12px 18px;">
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        <span class="m-tag" style="background:#1a237e22; color:#1a237e; border:1px solid #1a237e44;">SHA -> PUS (40') <span style="opacity:0.5; cursor:pointer; margin-left:4px;">x</span></span>
+        <span class="m-tag" style="background:#e5393522; color:#e53935; border:1px solid #e5393544;">NBO -> PUS (40') <span style="opacity:0.5; cursor:pointer; margin-left:4px;">x</span></span>
+        <span class="m-tag" style="background:#43a04722; color:#43a047; border:1px solid #43a04744;">VN HPH -> PUS (40') <span style="opacity:0.5; cursor:pointer; margin-left:4px;">x</span></span>
+      </div>
+    </div>
+  </div>
+
+  <h3><span data-lang="ko">사용 예시</span><span data-lang="en">Workflow Example</span></h3>
+  <div data-lang="ko">
+    <div class="step"><span class="step-num">1</span> <span>POL Country = <code>CN</code>, POD Country = <code>KR</code>, POD Port = <code>PUS</code>를 선택합니다</span></div>
+    <div class="step"><span class="step-num">2</span> <span><strong>Search</strong>를 클릭합니다 &mdash; 모든 CN 항구에서 PUS까지의 운임이 표시됩니다</span></div>
+    <div class="step"><span class="step-num">3</span> <span>POL Country를 <code>VN</code>으로 변경하고, POD는 PUS를 유지합니다</span></div>
+    <div class="step"><span class="step-num">4</span> <span><strong>+</strong>를 클릭합니다 &mdash; VN 루트가 CN 루트와 함께 비교용으로 추가됩니다</span></div>
+  </div>
+  <div data-lang="en">
+    <div class="step"><span class="step-num">1</span> <span>Select POL Country = <code>CN</code>, POD Country = <code>KR</code>, POD Port = <code>PUS</code></span></div>
+    <div class="step"><span class="step-num">2</span> <span>Click <strong>Search</strong> &mdash; all CN ports to PUS are displayed</span></div>
+    <div class="step"><span class="step-num">3</span> <span>Now change POL Country = <code>VN</code>, keep POD as PUS</span></div>
+    <div class="step"><span class="step-num">4</span> <span>Click <strong>+</strong> &mdash; VN routes are added alongside CN routes for comparison</span></div>
+  </div>
+</section>
+
+<!-- 5. Stats -->
+<section id="stats">
+  <h2><span data-lang="ko">5. 운임 요약 카드</span><span data-lang="en">5. Rate Summary Cards</span></h2>
+  <p data-lang="ko">각 활성 루트에 대해 최신 운임, 전주 대비 변동, 이력 범위, 그리고 원본 파일의 <strong>운임 조건(Remark)</strong>을 요약 카드로 표시합니다.</p>
+  <p data-lang="en">For each active route, a summary card shows the latest rate, week-over-week change, historical range, and <strong>rate conditions (remarks)</strong> from the source file.</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> <span data-lang="ko">운임 요약</span><span data-lang="en">Rate Summary</span></div>
+    <div class="mock-body">
+      <div class="m-stats">
+        <div class="m-stat">
+          <div class="m-label">SHA -> PUS (40')</div>
+          <div class="m-val" style="color:#1a237e;">$500</div>
+          <div class="m-chg" style="color:#43a047;">&#9660; $50 (-9.1%) vs prev week</div>
+          <div style="font-size:10px; color:#888; margin-top:3px;">Range: $450 ~ $750</div>
+          <div class="callout blue" style="margin:6px 0 0; padding:1px;">
+            <span class="callout-label blue" style="top:-10px; font-size:9px;">Remark</span>
+            <div class="m-remark">Subject to BAF CAF CIC LSS</div>
+          </div>
+        </div>
+        <div class="m-stat">
+          <div class="m-label">NBO -> PUS (40')</div>
+          <div class="m-val" style="color:#e53935;">$1,200</div>
+          <div class="m-chg" style="color:#e53935;">&#9650; $200 (+20.0%) vs prev week</div>
+          <div style="font-size:10px; color:#888; margin-top:3px;">Range: $800 ~ $1,400</div>
+          <div class="m-remark">Subject to BAF CAF CIC LSS</div>
+        </div>
+        <div class="m-stat">
+          <div class="m-label">VN HPH -> PUS (40')</div>
+          <div class="m-val" style="color:#43a047;">$300</div>
+          <div class="m-chg">&#8211; $0 (0%) vs prev week</div>
+          <div style="font-size:10px; color:#888; margin-top:3px;">Range: $250 ~ $400</div>
+          <div class="m-remark">Subject to LCC,LSS (INCLUDE EBS,FAF,CRC)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3><span data-lang="ko">카드 구성 요소</span><span data-lang="en">Card Elements</span></h3>
+  <ul data-lang="ko">
+    <li><strong>루트 라벨</strong> &mdash; POL -> POD (컨테이너 크기)</li>
+    <li><strong>최신 운임</strong> &mdash; 가장 최근 주차의 USD 운임</li>
+    <li><strong>변동</strong> &mdash; <span style="color:#e53935;">&#9650; 빨간색 = 상승</span>, <span style="color:#43a047;">&#9660; 초록색 = 하락</span></li>
+    <li><strong>범위</strong> &mdash; 전체 기간의 최소 ~ 최대 운임</li>
+    <li><strong>Remark</strong> (파란 박스) &mdash; 원본 Excel 파일의 운임 조건 (할증료, 포함 항목 등)</li>
+  </ul>
+  <ul data-lang="en">
+    <li><strong>Route label</strong> &mdash; POL -> POD (container size)</li>
+    <li><strong>Latest rate</strong> &mdash; Most recent week's rate in USD</li>
+    <li><strong>Change</strong> &mdash; <span style="color:#e53935;">&#9650; Red = increase</span>, <span style="color:#43a047;">&#9660; Green = decrease</span></li>
+    <li><strong>Range</strong> &mdash; Min ~ Max rate across all available weeks</li>
+    <li><strong>Remark</strong> (blue box) &mdash; Rate conditions from the source Excel file (surcharges, inclusions, etc.)</li>
+  </ul>
+</section>
+
+<!-- 6. Chart -->
+<section id="chart">
+  <h2><span data-lang="ko">6. 운임 추이 차트</span><span data-lang="en">6. Rate Trend Chart</span></h2>
+  <p data-lang="ko">인터랙티브 라인 차트로 시간에 따른 운임 추이를 보여줍니다. 각 루트는 태그 색상과 일치하는 다른 색상으로 표시됩니다.</p>
+  <p data-lang="en">An interactive line chart shows rate trends over time. Each route is a different color matching its tag.</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> <span data-lang="ko">운임 추이</span><span data-lang="en">Rate Trend</span></div>
+    <div class="mock-body" style="background:white; padding:14px 18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h4 style="font-size:14px; margin:0;"><span data-lang="ko">운임 추이</span><span data-lang="en">Rate Trend</span></h4>
+        <div class="callout green" style="margin:0; padding:1px 4px; display:inline-flex; gap:4px;">
+          <span class="callout-label green" style="top:-10px; font-size:9px;"><span data-lang="ko">기간 선택</span><span data-lang="en">Time Range</span></span>
+          <span class="m-chip active">All</span>
+          <span class="m-chip">1Y</span>
+          <span class="m-chip">6M</span>
+          <span class="m-chip">3M</span>
+        </div>
+      </div>
+      <div class="m-chart-area" style="height:120px; position:relative;">
+        <svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none" style="position:absolute; inset:0;">
+          <polyline points="10,70 60,68 110,50 160,45 210,55 260,40 310,35 360,30 390,32" fill="none" stroke="#1a237e" stroke-width="2"/>
+          <polyline points="10,40 60,42 110,30 160,25 210,28 260,20 310,25 360,22 390,18" fill="none" stroke="#e53935" stroke-width="2"/>
+          <polyline points="10,85 60,83 110,80 160,82 210,78 260,75 310,80 360,78 390,80" fill="none" stroke="#43a047" stroke-width="2"/>
+        </svg>
+        <div style="position:absolute; right:40px; top:10px; background:white; border:1px solid #ddd; border-radius:6px; padding:8px 12px; font-size:11px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-weight:600; margin-bottom:4px;">2026-W15</div>
+          <div style="color:#e53935;">&#9632; NBO -> PUS: $1,200</div>
+          <div style="color:#1a237e;">&#9632; SHA -> PUS: $500</div>
+          <div style="color:#43a047;">&#9632; VN HPH -> PUS: $300</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:4px;">
+        <span>W01 '24</span><span>W26 '24</span><span>W01 '25</span><span>W26 '25</span><span>W01 '26</span><span>W17 '26</span>
+      </div>
+    </div>
+  </div>
+
+  <h3><span data-lang="ko">주요 기능</span><span data-lang="en">Features</span></h3>
+  <ul data-lang="ko">
+    <li><strong>기간 선택 버튼</strong> &mdash; <code>All</code>, <code>1Y</code> (52주), <code>6M</code> (26주), <code>3M</code> (13주)</li>
+    <li><strong>마우스 호버 툴팁</strong> &mdash; 해당 주차와 모든 루트 운임을 <strong>높은 순서대로 정렬</strong>하여 표시합니다. 해당 주차에 데이터가 없는 루트는 숨겨집니다.</li>
+    <li><strong>X축 라벨</strong> &mdash; 형식: <code>W15 '26</code> (주차 번호 + 연도)</li>
+  </ul>
+  <ul data-lang="en">
+    <li><strong>Time range buttons</strong> &mdash; <code>All</code>, <code>1Y</code> (52 weeks), <code>6M</code> (26 weeks), <code>3M</code> (13 weeks)</li>
+    <li><strong>Hover tooltip</strong> &mdash; Shows the week and all route rates, <strong>sorted from highest to lowest</strong>. Routes with no data for that week are hidden.</li>
+    <li><strong>X-axis labels</strong> &mdash; Format: <code>W15 '26</code> (week number + year)</li>
+  </ul>
+</section>
+
+<!-- 7. Table -->
+<section id="table">
+  <h2><span data-lang="ko">7. 운임 이력 테이블</span><span data-lang="en">7. Rate History Table</span></h2>
+  <p data-lang="ko">최근 20주의 데이터가 테이블로 표시됩니다. 각 열은 하나의 루트를 나타냅니다.</p>
+  <p data-lang="en">The last 20 weeks of data are shown in a table. Each column represents one route.</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> <span data-lang="ko">운임 이력 (최근 20주)</span><span data-lang="en">Rate History (Latest 20 weeks)</span></div>
+    <div class="mock-body" style="background:white; padding:14px;">
+      <table class="m-table">
+        <thead>
+          <tr>
+            <th><span data-lang="ko">주차</span><span data-lang="en">Week</span></th>
+            <th style="color:#1a237e;">SHA -> PUS (40')</th>
+            <th style="color:#e53935;">NBO -> PUS (40')</th>
+            <th style="color:#43a047;">VN HPH -> PUS (40')</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="m-week-active" style="position:relative;">
+              2026-W17 &#9660;
+            </td>
+            <td>$500</td>
+            <td class="m-up">$1,200 &#9650;</td>
+            <td>$300</td>
+          </tr>
+          <tr>
+            <td style="cursor:pointer;">2026-W16</td>
+            <td class="m-dn">$550 &#9660;</td>
+            <td>$1,000</td>
+            <td>$300</td>
+          </tr>
+          <tr>
+            <td style="cursor:pointer;">2026-W15</td>
+            <td class="m-up">$600 &#9650;</td>
+            <td>$1,000</td>
+            <td class="m-dn">$300 &#9660;</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3><span data-lang="ko">열 정렬</span><span data-lang="en">Column Sorting</span></h3>
+  <p data-lang="ko">왼쪽 열의 <strong>주차 셀</strong>을 클릭하면 해당 주차의 운임을 기준으로 루트 열이 정렬됩니다 &mdash; 가장 높은 운임이 왼쪽에 표시됩니다. 특정 주차에 가장 비싼 루트를 빠르게 확인할 수 있습니다.</p>
+  <p data-lang="en">Click on any <strong>week cell</strong> (left column) to sort the route columns by that week's rate &mdash; highest rate on the left. This helps quickly identify which routes are most expensive for a given week.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin:15px 0;">
+    <div style="border:1px solid #ddd; border-radius:8px; padding:14px;">
+      <h4 style="font-size:13px; color:#666; margin-bottom:8px;"><span data-lang="ko">기본 순서</span><span data-lang="en">Default Order</span></h4>
+      <table class="m-table" style="font-size:11px;">
+        <tr><td><span data-lang="ko">주차</span><span data-lang="en">Week</span></td><td style="color:#1a237e;">SHA</td><td style="color:#e53935;">NBO</td><td style="color:#43a047;">VN HPH</td></tr>
+        <tr><td>W17</td><td>$500</td><td>$1,200</td><td>$300</td></tr>
+      </table>
+      <p style="font-size:12px; color:#888; margin-top:8px;"><span data-lang="ko">POD 국가/항구순 정렬</span><span data-lang="en">Sorted by POD country/port</span></p>
+    </div>
+    <div style="border:2px solid #1a237e; border-radius:8px; padding:14px;">
+      <h4 style="font-size:13px; color:#1a237e; margin-bottom:8px;"><span data-lang="ko">W17 클릭 후 &#9660;</span><span data-lang="en">After Clicking W17 &#9660;</span></h4>
+      <table class="m-table" style="font-size:11px;">
+        <tr><td style="background:#e8eaf6; font-weight:700;"><span data-lang="ko">주차</span><span data-lang="en">Week</span></td><td style="color:#e53935;">NBO</td><td style="color:#1a237e;">SHA</td><td style="color:#43a047;">VN HPH</td></tr>
+        <tr><td style="background:#e8eaf6; font-weight:700;">W17 &#9660;</td><td>$1,200</td><td>$500</td><td>$300</td></tr>
+      </table>
+      <p style="font-size:12px; color:#1a237e; margin-top:8px;"><span data-lang="ko">열 재정렬: 높은 운임 순</span><span data-lang="en">Columns reordered: highest rate first</span></p>
+    </div>
+  </div>
+
+  <p data-lang="ko">같은 주차를 다시 클릭하면 기본 정렬 순서(POD 국가순)로 돌아갑니다.</p>
+  <p data-lang="en">Click the same week again to return to the default sort order (by POD country).</p>
+
+  <h3><span data-lang="ko">운임 변동 표시</span><span data-lang="en">Rate Indicators</span></h3>
+  <ul data-lang="ko">
+    <li><span style="color:#e53935;">&#9650; 빨간색</span> &mdash; 전주 대비 운임 상승</li>
+    <li><span style="color:#43a047;">&#9660; 초록색</span> &mdash; 전주 대비 운임 하락</li>
+    <li>화살표 없음 &mdash; 변동 없음 또는 이전 데이터 없음</li>
+  </ul>
+  <ul data-lang="en">
+    <li><span style="color:#e53935;">&#9650; Red</span> &mdash; Rate increased from previous week</li>
+    <li><span style="color:#43a047;">&#9660; Green</span> &mdash; Rate decreased from previous week</li>
+    <li>No arrow &mdash; Rate unchanged or no previous data</li>
+  </ul>
+</section>
+
+<!-- 8. Sign Out -->
+<section id="signout">
+  <h2><span data-lang="ko">8. 로그아웃</span><span data-lang="en">8. Sign Out</span></h2>
+  <p data-lang="ko">헤더 우측 상단의 프로필 사진과 이름을 클릭하면 로그아웃됩니다. 로그인 화면으로 돌아갑니다.</p>
+  <p data-lang="en">Click your profile picture and name in the top-right corner of the header to sign out. You will be returned to the login screen.</p>
+
+  <div class="mock">
+    <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> <span data-lang="ko">헤더</span><span data-lang="en">Header</span></div>
+    <div class="mock-body">
+      <div class="m-header">
+        <div><h3>KMTC Freight Rate Dashboard</h3></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:11px; opacity:0.7;">117,323 records</span>
+          <div class="callout" style="margin:0; padding:1px; border-color:#ffc107;">
+            <span class="callout-label" style="background:#ffc107; color:#333; top:-10px; font-size:9px;"><span data-lang="ko">클릭하여 로그아웃</span><span data-lang="en">Click to sign out</span></span>
+            <div class="m-user" style="background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:15px;">
+              <div class="m-avatar"></div> J. Park
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+function setLang(lang) {
+  localStorage.setItem('guide-lang', lang);
+  if (lang === 'en') {
+    document.body.classList.add('lang-en');
+  } else {
+    document.body.classList.remove('lang-en');
+  }
+  document.getElementById('btn-ko').classList.toggle('active', lang === 'ko');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.documentElement.lang = lang;
+}
+
+// Initialize language from localStorage
+(function() {
+  var saved = localStorage.getItem('guide-lang') || 'ko';
+  setLang(saved);
+})();
+</script>
+</body>
+</html>
