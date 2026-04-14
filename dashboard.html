@@ -16,13 +16,14 @@ body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: 
 .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
 /* Filter Panel */
-.filters { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
-.filter-group { display: flex; flex-direction: column; gap: 5px; }
+.filters { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1 1 130px; min-width: 120px; max-width: 200px; }
 .filter-group label { font-size: 12px; font-weight: 600; color: #666; text-transform: uppercase; }
-.filter-group select, .filter-group input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px; }
+.filter-group select, .filter-group input { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; width: 100%; }
+.filter-actions { display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0; }
 .filter-group select:focus { border-color: #1a237e; outline: none; }
 /* Multi-select dropdown */
-.multi-select { position: relative; min-width: 180px; }
+.multi-select { position: relative; width: 100%; }
 .multi-select .ms-trigger { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: white; cursor: pointer; display: flex; justify-content: space-between; align-items: center; min-height: 36px; user-select: none; }
 .multi-select .ms-trigger:hover { border-color: #1a237e; }
 .multi-select .ms-trigger .arrow { font-size: 10px; color: #888; }
@@ -34,11 +35,11 @@ body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: 
 .multi-select .ms-item.ms-all { border-bottom: 1px solid #eee; font-weight: 600; }
 .multi-select .ms-count { background: #1a237e; color: white; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; }
 .source-desc { font-size: 11px; color: #999; margin-top: 2px; }
-.btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 600; }
+.btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 600; height: 36px; white-space: nowrap; }
 .btn-primary { background: #1a237e; color: white; }
 .btn-primary:hover { background: #283593; }
 .btn-secondary { background: #e8eaf6; color: #1a237e; }
-.btn-add { background: #4caf50; color: white; font-size: 20px; padding: 6px 14px; }
+.btn-add { background: #4caf50; color: white; font-size: 20px; padding: 0 14px; height: 36px; line-height: 36px; }
 .btn-add:hover { background: #388e3c; }
 
 /* Compare list */
@@ -165,9 +166,20 @@ tr:hover { background: #f8f9ff; }
         <option value="r20">20ft</option>
       </select>
     </div>
-    <button class="btn btn-primary" onclick="searchRoutes()" title="조회">조회</button>
-    <button class="btn btn-add" onclick="addToCompare()" title="비교 추가">+</button>
-    <button class="btn btn-secondary" onclick="clearCompare()">Clear All</button>
+    <div class="filter-actions">
+      <button class="btn btn-primary" onclick="searchRoutes()" title="조회">조회</button>
+      <button class="btn btn-add" onclick="addToCompare()" title="비교 추가">+</button>
+      <button class="btn btn-secondary" onclick="clearCompare()">Clear All</button>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Comparing Routes -->
+  <div class="compare-list" id="comparePanel" style="display:none;">
+    <h3>Comparing Routes:</h3>
+    <div class="compare-tags" id="compareTags"></div>
   </div>
 
   <!-- Chart -->
@@ -195,15 +207,6 @@ tr:hover { background: #f8f9ff; }
         <tbody id="tableBody"></tbody>
       </table>
     </div>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="stats-row" id="statsRow"></div>
-
-  <!-- Comparing Routes -->
-  <div class="compare-list" id="comparePanel" style="display:none;">
-    <h3>Comparing Routes:</h3>
-    <div class="compare-tags" id="compareTags"></div>
   </div>
 
 </div>
