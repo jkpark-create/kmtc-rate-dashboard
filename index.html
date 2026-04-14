@@ -1049,27 +1049,47 @@ function setRange(el) {
 }
 
 // ============ STATS ============
+function getCurrentWeekRate(points) {
+  const today = new Date().toISOString().slice(0, 10);
+  let best = null;
+  for (const p of points) {
+    if (p.date <= today && (!best || p.week > best.week)) best = p;
+  }
+  return best;
+}
+
 function updateStats(allSeries) {
   // Compact summary mode when many routes
   if (allSeries.length > 6) {
+    // Detect: same destination (show POL) vs same origin (show POD)
+    const uniquePods = new Set(allSeries.map(s => (s.item.podPort || '') + (s.item.podCn || '')));
+    const isDestFixed = uniquePods.size === 1;
+
     const summaries = allSeries.map(s => {
       const pts = s.points;
       if (pts.length < 1) return null;
-      const latest = pts[pts.length - 1].value;
-      const prev = pts.length >= 2 ? pts[pts.length - 2].value : null;
-      const diff = prev !== null ? latest - prev : 0;
-      return { label: s.item.podPort || s.item.podCn, latest, diff, color: s.color };
+      const cur = getCurrentWeekRate(pts);
+      if (!cur) return null;
+      const curIdx = pts.indexOf(cur);
+      const prev = curIdx > 0 ? pts[curIdx - 1] : null;
+      const diff = prev ? cur.value - prev.value : 0;
+      const label = isDestFixed ? s.item.pol : (s.item.podPort || s.item.podCn);
+      return { label, latest: cur.value, week: cur.week, diff, color: s.color };
     }).filter(Boolean).sort((a, b) => b.latest - a.latest);
+
+    if (summaries.length === 0) { document.getElementById('statsRow').innerHTML = ''; return; }
 
     const avg = Math.round(summaries.reduce((s, x) => s + x.latest, 0) / summaries.length);
     const highest = summaries[0];
     const lowest = summaries[summaries.length - 1];
+    const weekLabel = summaries[0].week;
+    const modeLabel = isDestFixed ? 'origins compared' : 'destinations compared';
 
     const html = `
       <div class="stat-card">
-        <div class="label">ROUTES</div>
+        <div class="label">ROUTES (${weekLabel})</div>
         <div class="value">${summaries.length}</div>
-        <div style="font-size:12px; color:#888; margin-top:5px;">destinations compared</div>
+        <div style="font-size:12px; color:#888; margin-top:5px;">${modeLabel}</div>
       </div>
       <div class="stat-card">
         <div class="label">AVERAGE RATE</div>
@@ -1092,8 +1112,10 @@ function updateStats(allSeries) {
   const html = allSeries.map(s => {
     const pts = s.points;
     if (pts.length < 2) return '';
-    const latest = pts[pts.length - 1].value;
-    const prev = pts[pts.length - 2].value;
+    const cur = getCurrentWeekRate(pts) || pts[pts.length - 1];
+    const curIdx = pts.indexOf(cur);
+    const latest = cur.value;
+    const prev = curIdx > 0 ? pts[curIdx - 1].value : pts[pts.length - 2].value;
     const diff = latest - prev;
     const pct = prev !== 0 ? ((diff / prev) * 100).toFixed(1) : 0;
     const min = Math.min(...pts.map(p => p.value));
