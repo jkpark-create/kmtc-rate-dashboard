@@ -154,6 +154,7 @@ body.lang-en tr[data-lang="ko"] { display: none; }
     <li><a href="#stats"><span data-lang="ko">운임 요약 카드</span><span data-lang="en">Rate Summary Cards</span></a></li>
     <li><a href="#chart"><span data-lang="ko">운임 추이 차트</span><span data-lang="en">Rate Trend Chart</span></a></li>
     <li><a href="#table"><span data-lang="ko">운임 이력 테이블</span><span data-lang="en">Rate History Table</span></a></li>
+    <li><a href="#dest-all"><span data-lang="ko">All 도착지 비교 기능</span><span data-lang="en">All Destination Comparison</span></a></li>
     <li><a href="#signout"><span data-lang="ko">로그아웃</span><span data-lang="en">Sign Out</span></a></li>
   </ol>
 </div>
@@ -306,10 +307,10 @@ body.lang-en tr[data-lang="ko"] { display: none; }
     <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POL Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Country of the Port of Loading (origin). e.g. VN, CN, ID</td></tr>
     <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POL Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">특정 적하항. <strong>다중 선택</strong> &mdash; 여러 항구 또는 "All"을 체크할 수 있습니다.</td></tr>
     <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POL Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Specific loading port(s). <strong>Multi-select</strong> &mdash; check multiple ports or "All".</td></tr>
-    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">양하항(도착지) 국가 코드. 예: KR, JP, IN</td></tr>
-    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Destination country code. e.g. KR, JP, IN</td></tr>
-    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">특정 양하항. 포트명은 정규화되어 통합됩니다 (예: NSA 변형은 모두 통합).</td></tr>
-    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Specific destination port. Base port names are normalized (e.g. all NSA variants unified).</td></tr>
+    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">양하항(도착지) 국가 코드. <code>All</code> 선택 시 모든 도착 국가별로 자동 확장됩니다.</td></tr>
+    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Country</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Destination country code. Select <code>All</code> to auto-expand by all destination countries.</td></tr>
+    <tr data-lang="ko"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">특정 양하항. <code>All</code> 선택 시 해당 국가 내 모든 포트별로 자동 확장됩니다.</td></tr>
+    <tr data-lang="en"><td style="padding:8px; border-bottom:1px solid #eee;"><strong>POD Port</strong></td><td style="padding:8px; border-bottom:1px solid #eee;">Specific destination port. Select <code>All</code> to auto-expand by all ports within the country.</td></tr>
     <tr data-lang="ko"><td style="padding:8px;"><strong>Container</strong></td><td style="padding:8px;">컨테이너 크기: 40ft 또는 20ft.</td></tr>
     <tr data-lang="en"><td style="padding:8px;"><strong>Container</strong></td><td style="padding:8px;">Container size: 40ft or 20ft.</td></tr>
   </table>
@@ -425,6 +426,16 @@ body.lang-en tr[data-lang="ko"] { display: none; }
     <li><strong>Range</strong> &mdash; Min ~ Max rate across all available weeks</li>
     <li><strong>Remark</strong> (blue box) &mdash; Rate conditions from the source Excel file (surcharges, inclusions, etc.)</li>
   </ul>
+
+  <h3><span data-lang="ko">다수 루트 요약 모드</span><span data-lang="en">Multi-Route Summary Mode</span></h3>
+  <p data-lang="ko">7개 이상의 루트를 비교할 때는 요약 카드로 자동 전환됩니다: <strong>총 루트 수(주차 표시)</strong>, <strong>평균 운임</strong>, <strong>최고/최저</strong>. 모든 운임은 현재 주차 기준으로 표시됩니다.</p>
+  <p data-lang="en">When comparing 7+ routes, cards switch to summary mode: <strong>total routes (with week label)</strong>, <strong>average rate</strong>, <strong>highest/lowest</strong>. All rates reflect the current week.</p>
+
+  <div class="note">
+    <strong data-lang="ko">참고:</strong><strong data-lang="en">Note:</strong>
+    <span data-lang="ko"> 도착지 고정 비교(같은 POD, 다른 POL) 시 최고/최저에는 <strong>선적지(POL) 포트명</strong>이 표시됩니다. 선적지 고정 비교(같은 POL, 다른 POD) 시에는 <strong>도착지(POD) 포트명</strong>이 표시됩니다.</span>
+    <span data-lang="en"> When comparing to the same destination (fixed POD, different POLs), highest/lowest shows the <strong>origin port name</strong>. When comparing from the same origin (fixed POL, different PODs), it shows the <strong>destination port name</strong>.</span>
+  </div>
 </section>
 
 <!-- 6. Chart -->
@@ -561,9 +572,54 @@ body.lang-en tr[data-lang="ko"] { display: none; }
   </ul>
 </section>
 
-<!-- 8. Sign Out -->
+<!-- 8. All Destination Comparison -->
+<section id="dest-all">
+  <h2><span data-lang="ko">8. All 도착지 비교 기능</span><span data-lang="en">8. All Destination Comparison</span></h2>
+  <p data-lang="ko">POD Country와 POD Port 필터에서 <strong>All</strong>을 선택하면 선택한 선적지(POL)의 모든 도착지를 한번에 비교할 수 있습니다.</p>
+  <p data-lang="en">Select <strong>All</strong> in the POD Country and POD Port filters to compare all destinations from the selected origin(s) at once.</p>
+
+  <h3><span data-lang="ko">자동 확장 동작</span><span data-lang="en">Auto-Expand Behavior</span></h3>
+  <table style="width:100%; border-collapse:collapse; font-size:14px; margin:10px 0;">
+    <tr style="background:#f5f5f5;">
+      <th data-lang="ko" style="padding:8px; text-align:left;">필터 상태</th><th data-lang="ko" style="padding:8px; text-align:left;">동작</th>
+      <th data-lang="en" style="padding:8px; text-align:left;">Filter State</th><th data-lang="en" style="padding:8px; text-align:left;">Behavior</th>
+    </tr>
+    <tr>
+      <td data-lang="ko" style="padding:8px; border-bottom:1px solid #eee;">POD Country=All, Port=All</td><td data-lang="ko" style="padding:8px; border-bottom:1px solid #eee;">모든 <strong>도착 국가별</strong>로 자동 확장</td>
+      <td data-lang="en" style="padding:8px; border-bottom:1px solid #eee;">POD Country=All, Port=All</td><td data-lang="en" style="padding:8px; border-bottom:1px solid #eee;">Auto-expands by <strong>destination country</strong></td>
+    </tr>
+    <tr>
+      <td data-lang="ko" style="padding:8px; border-bottom:1px solid #eee;">POD Country=KR, Port=All</td><td data-lang="ko" style="padding:8px; border-bottom:1px solid #eee;">해당 국가 내 모든 <strong>포트별</strong>로 자동 확장</td>
+      <td data-lang="en" style="padding:8px; border-bottom:1px solid #eee;">POD Country=KR, Port=All</td><td data-lang="en" style="padding:8px; border-bottom:1px solid #eee;">Auto-expands by <strong>all ports</strong> within that country</td>
+    </tr>
+    <tr>
+      <td data-lang="ko" style="padding:8px;">POD Country=KR, Port=PUS</td><td data-lang="ko" style="padding:8px;">단일 루트 조회 (기존 동작)</td>
+      <td data-lang="en" style="padding:8px;">POD Country=KR, Port=PUS</td><td data-lang="en" style="padding:8px;">Single route lookup (original behavior)</td>
+    </tr>
+  </table>
+
+  <h3><span data-lang="ko">Destination Pivot Table</span><span data-lang="en">Destination Pivot Table</span></h3>
+  <p data-lang="ko">같은 선적지에서 5개 이상 도착지를 비교하면, 테이블이 자동으로 <strong>Destination Pivot</strong> 형식으로 전환됩니다:</p>
+  <p data-lang="en">When comparing 5+ destinations from the same origin, the table automatically switches to <strong>Destination Pivot</strong> format:</p>
+  <ul data-lang="ko">
+    <li><strong>행</strong> = 도착지 (최신 운임 높은 순 정렬)</li>
+    <li><strong>열</strong> = 최근 10주 + WoW 변동 + 운임 범위</li>
+    <li>모든 열 헤더 클릭으로 정렬 가능</li>
+  </ul>
+  <ul data-lang="en">
+    <li><strong>Rows</strong> = Destinations (sorted by latest rate, highest first)</li>
+    <li><strong>Columns</strong> = Latest 10 weeks + WoW change + Rate range</li>
+    <li>Click any column header to sort</li>
+  </ul>
+
+  <h3><span data-lang="ko">지원 선적지 (POL)</span><span data-lang="en">Supported Origins (POL)</span></h3>
+  <p data-lang="ko">SEA 소스에서 19개 선적지를 지원합니다. TH (방콕/렘차방), PH (마닐라/MIP), MY PEN (페낭) 포함.</p>
+  <p data-lang="en">19 origin ports are supported from SEA source, including TH (Bangkok/Laem Chabang), PH (Manila/MIP), and MY PEN (Penang).</p>
+</section>
+
+<!-- 9. Sign Out -->
 <section id="signout">
-  <h2><span data-lang="ko">8. 로그아웃</span><span data-lang="en">8. Sign Out</span></h2>
+  <h2><span data-lang="ko">9. 로그아웃</span><span data-lang="en">9. Sign Out</span></h2>
   <p data-lang="ko">헤더 우측 상단의 프로필 사진과 이름을 클릭하면 로그아웃됩니다. 로그인 화면으로 돌아갑니다.</p>
   <p data-lang="en">Click your profile picture and name in the top-right corner of the header to sign out. You will be returned to the login screen.</p>
 
