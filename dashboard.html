@@ -844,11 +844,9 @@ function addToCompare() {
 
   if (selectedPols.length === 0) { alert('POL(Origin)을 선택하세요.'); return; }
 
-  const MAX_ITEMS = 15;
   const cSize = container === 'r20' ? "20'" : "40'";
 
   selectedPols.forEach(pol => {
-    if (compareItems.length >= MAX_ITEMS) return;
     const polSrc = DATA.find(d => d.pol === pol)?.src;
     const tier = (polSrc === 'CN_HK') ? 'CD' : 'ALL';
 
@@ -858,7 +856,6 @@ function addToCompare() {
       if (tier !== 'ALL') polData = polData.filter(d => d.tier === tier);
       const countries = [...new Set(polData.map(d => d.pod_cn))].filter(Boolean).sort();
       for (const cn of countries) {
-        if (compareItems.length >= MAX_ITEMS) break;
         const key = `${pol}>${cn}>*|${tier}|${container}`;
         if (compareItems.find(c => c.key === key)) continue;
         compareItems.push({ key, pol, podCn: cn, podPort: '', tier, container,
@@ -870,7 +867,6 @@ function addToCompare() {
       if (tier !== 'ALL') polData = polData.filter(d => d.tier === tier);
       const ports = [...new Set(polData.map(d => basePort(d.pod_port)))].filter(Boolean).sort();
       for (const port of ports) {
-        if (compareItems.length >= MAX_ITEMS) break;
         const key = `${pol}>${podCn}>${port}|${tier}|${container}`;
         if (compareItems.find(c => c.key === key)) continue;
         compareItems.push({ key, pol, podCn, podPort: port, tier, container,
@@ -884,10 +880,6 @@ function addToCompare() {
         label: `${pol} → ${podPort || podCn} (${cSize})` });
     }
   });
-
-  if (compareItems.length >= MAX_ITEMS) {
-    alert(`최대 ${MAX_ITEMS}개까지 비교 가능합니다. 필터를 좁혀주세요.`);
-  }
 
   renderCompare();
   updateChart();
