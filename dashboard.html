@@ -313,9 +313,10 @@ const COLORS = [
 const POL_COUNTRY_MAP = {
   'AE JEA':'AE','EGSKN':'EG','ID JKT':'ID','ID SUB':'ID',
   'IN MAA KTP':'IN','IN MUN':'IN','IN NSA':'IN','JOAQJ':'JO',
-  'MY PGU':'MY','MY PKW,PKG':'MY','SAJED':'SA','SG SIN':'SG',
+  'MY PEN':'MY','MY PGU':'MY','MY PKW,PKG':'MY','SAJED':'SA','SG SIN':'SG',
+  'TH BKK':'TH','TH LCH':'TH','PH MIP':'PH','PH MNL':'PH',
   'VN HPH':'VN','VN SGN':'VN',
-  'CAN':'CN','DLC':'CN','HKG':'HK','NBO':'CN','NKG':'CN',
+  'CAN':'CN','DLC':'CN','HKG':'HK','MX':'CN','NBO':'CN','NKG':'CN',
   'SHA':'CN','SZP':'CN','TAO':'CN','XGG':'CN','XMN':'CN'
 };
 
@@ -327,7 +328,7 @@ const msState = { msPolPort: { selected: new Set(), allValues: [] } };
 // ============ GOOGLE SHEETS API ============
 const SEA_SHEET_ID  = '1Itzp1CccniJngry-535jLnFvfDuuG0se';
 const CNHK_SHEET_ID = '1T8ZZeJ0cr_jWvyki9OQHKmD8qW2Z4Ai4SgBn3Xkg3vk';
-const SEA_SKIP   = [' OBT key areas'];
+const SEA_SKIP   = [' OBT key areas', 'PK', 'RS', 'LK', 'LB & ZLO'];
 const CNHK_SHEETS = ['SHA','NBO','TAO','XGG','DLC','NKG','SZP','CAN','XMN','HKG','MX'];
 const CACHE_KEY  = 'kmtc_rate_cache';
 const CACHE_TTL  = 30 * 60 * 1000; // 30 min
@@ -395,31 +396,69 @@ function parseSEA(sheetNames, valuesArr) {
     if (SEA_SKIP.includes(name)) return;
     const rows = valuesArr[si].values || [];
     if (rows.length < 5) return;
-    const pol = name.trim();
 
-    // Find weeks: row 2 (idx 1), col 7+ (idx 6+), step 2
+    // Auto-detect week header row (scan rows 0-3)
+    let weekRow = -1, weekStartCol = -1;
+    for (let ri = 0; ri < 4 && weekRow < 0; ri++) {
+      for (let c = 5; c < (rows[ri]||[]).length; c++) {
+        if (parseWeekLabel(cell(rows, ri, c))) { weekRow = ri; weekStartCol = c; break; }
+      }
+    }
+    if (weekRow < 0) return;
+
+    // Detect 3-column format: "POD CN" at col B means POL-group column exists at col A
+    const labelRow = weekRow + 1;
+    const labelB = cell(rows, labelRow, 1);
+    const is3Col = labelB && String(labelB).trim().startsWith('POD CN');
+
+    const cnCol = is3Col ? 1 : 0;
+    const portCol = is3Col ? 2 : 1;
+    const remarkCol = is3Col ? 3 : 2;
+    const dataStartRow = weekRow + 3;
+    const polCountry = is3Col ? String(cell(rows, weekRow, 1) || '').trim() : '';
+
+    // Collect weeks (step 2: 20ft, 40ft pairs)
     const weeks = [];
-    for (let c = 6; c < (rows[1]||[]).length; c += 2) {
-      const pw = parseWeekLabel(cell(rows,1,c));
-      if (pw) weeks.push({ c20: c, c40: c+1, ...pw });
+    for (let c = weekStartCol; c < (rows[weekRow]||[]).length; c += 2) {
+      const pw = parseWeekLabel(cell(rows, weekRow, c));
+      if (pw) weeks.push({ c20: c, c40: c + 1, ...pw });
     }
     if (!weeks.length) return;
 
     let curCn = '';
-    for (let r = 4; r < rows.length; r++) {
-      const cv = cell(rows, r, 0);
-      const pv = cell(rows, r, 1);
+    let activePols = [name.trim()];
+
+    for (let r = dataStartRow; r < rows.length; r++) {
+      // 3-column: parse POL group from col A
+      if (is3Col) {
+        const gv = cell(rows, r, 0);
+        if (gv) {
+          const gs = String(gv).trim().replace(/\n/g, ',');
+          if (/ONLY/i.test(gs)) {
+            const m = gs.match(/^([A-Z]{2,4})/i);
+            if (m) activePols = [`${polCountry} ${m[1].toUpperCase()}`];
+          } else {
+            const parts = gs.split(/[,\s]+/).filter(s => /^[A-Z]{2,4}$/i.test(s));
+            if (parts.length > 0) activePols = parts.map(p => `${polCountry} ${p.toUpperCase()}`);
+          }
+        }
+      }
+
+      const cv = cell(rows, r, cnCol);
+      const pv = cell(rows, r, portCol);
       if (cv) curCn = String(cv).trim().split('\n')[0];
       if (!pv) continue;
       const podPort = String(pv).trim();
-      const rv = cell(rows, r, 2);
+      const rv = cell(rows, r, remarkCol);
       const remark = (rv && String(rv).trim() && !/^\d+\.?\d*$/.test(String(rv).trim())) ? String(rv).trim().replace(/\n/g,' ') : '';
 
       for (const w of weeks) {
         const r20 = safeFloat(cell(rows, r, w.c20));
         const r40 = safeFloat(cell(rows, r, w.c40));
         if (r20 !== null || r40 !== null) {
-          rates.push({ src:'SEA', pol, pod_cn:curCn, pod_port:podPort, week:w.wk, date:w.date, r20, r40, tier:'ALL', remark });
+          activePols.forEach(pol => {
+            rates.push({ src:'SEA', pol, pod_cn:curCn, pod_port:podPort, week:w.wk, date:w.date, r20, r40, tier:'ALL', remark });
+          });
         }
       }
     }
