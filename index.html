@@ -1,8 +1,12 @@
 <!DOCTYPE html>
+<!-- Version: 2026-04-16T10:50:00Z -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>KMTC Freight Rate Dashboard</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -85,6 +89,36 @@ tr:hover { background: #f8f9ff; }
 
 /* Color palette for chart lines */
 .hidden { display: none; }
+
+/* Chart Legend - Multi-column layout */
+.chart-container canvas ~ * {
+  max-width: 100%;
+}
+.chartjs-legend {
+  padding: 10px;
+}
+.chartjs-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+/* Legend grid layout for many items */
+.chart-container ul[role="legend"] {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  column-gap: 15px !important;
+  row-gap: 6px !important;
+  list-style: none !important;
+  padding: 0 !important;
+}
+.chart-container ul[role="legend"] li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 
 /* Auth */
 #authOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #1a237e, #283593); display: flex; align-items: center; justify-content: center; z-index: 9999; }
@@ -181,10 +215,10 @@ tr:hover { background: #f8f9ff; }
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h2>Rate Trend</h2>
       <div class="chart-options">
-        <span class="chip active" data-range="all" onclick="setRange(this)">All</span>
+        <span class="chip" data-range="all" onclick="setRange(this)">All</span>
         <span class="chip" data-range="52" onclick="setRange(this)">1Y</span>
         <span class="chip" data-range="26" onclick="setRange(this)">6M</span>
-        <span class="chip" data-range="13" onclick="setRange(this)">3M</span>
+        <span class="chip active" data-range="13" onclick="setRange(this)">3M</span>
       </div>
     </div>
     <div class="chart-container">
@@ -194,7 +228,7 @@ tr:hover { background: #f8f9ff; }
 
   <!-- Rate History Table -->
   <div class="chart-panel">
-    <h2 id="tableTitle">Rate History (Latest 20 weeks)</h2>
+    <h2 id="tableTitle">Rate History (Latest 15 weeks)</h2>
     <div class="table-panel" style="max-height:400px; overflow-y:auto; box-shadow:none; padding:0;">
       <table id="rateTable">
         <thead><tr id="tableHeader"></tr></thead>
@@ -217,6 +251,21 @@ tr:hover { background: #f8f9ff; }
 </div>
 </div><!-- /appWrap -->
 
+<script>
+window.addEventListener('load', () => {
+  // Force reload on every page load
+  if (!window.location.hash.includes('nocache')) {
+    window.location.hash = 'nocache=' + Date.now();
+    window.location.reload();
+  }
+});
+// Prevent caching
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => registration.unregister());
+  });
+}
+</script>
 <script>
 // ============ AUTH (Token Client for Sheets API access) ============
 const GOOGLE_CLIENT_ID = '409330651463-giie223egsskdq10etn642gjtron1hq5.apps.googleusercontent.com';
@@ -304,7 +353,10 @@ window.addEventListener('load', checkSession);
 let DATA = [];
 let compareItems = [];
 let chart = null;
-let currentRange = 'all';
+let currentRange = '13'; // Force 3M (13 weeks) as default
+
+console.log('DASHBOARD LOADED - Version 2026-04-16T10:50:00Z');
+console.log('currentRange initialized to:', currentRange);
 
 const COLORS = [
   '#1a237e','#e53935','#43a047','#fb8c00','#8e24aa',
@@ -1006,10 +1058,40 @@ function updateChart() {
       plugins: {
         legend: {
           position: compareItems.length > 6 ? 'right' : 'top',
+          align: compareItems.length > 6 ? 'start' : 'end',
           labels: {
             usePointStyle: true,
             padding: compareItems.length > 6 ? 8 : 15,
-            font: { size: compareItems.length > 6 ? 11 : 12 }
+            font: { size: compareItems.length > 6 ? 10 : 12 },
+            boxPadding: 5,
+            generateLabels: (chart) => {
+              if (compareItems.length <= 6) {
+                return Chart.defaults.plugins.legend.labels.generateLabels(chart);
+              }
+              // Reorder datasets for balanced 2-column layout
+              const datasets = chart.data.datasets;
+              const n = datasets.length;
+              const mid = Math.ceil(n / 2);
+              const reordered = [];
+              
+              // Interleave: left column items, then right column items
+              for (let i = 0; i < mid; i++) {
+                reordered.push(datasets[i]);
+                if (mid + i < n) {
+                  reordered.push(datasets[mid + i]);
+                }
+              }
+              
+              return reordered.map((dataset, i) => ({
+                text: dataset.label,
+                fillStyle: dataset.borderColor,
+                strokeStyle: dataset.borderColor,
+                lineWidth: 2,
+                hidden: false,
+                index: datasets.indexOf(dataset),
+                pointStyle: 'circle'
+              }));
+            }
           }
         },
         tooltip: {
@@ -1036,6 +1118,19 @@ function updateChart() {
       }
     }
   });
+
+  // Apply two-column layout to legend when there are many items
+  if (compareItems.length > 6) {
+    setTimeout(() => {
+      const chartContainer = document.querySelector('.chart-container');
+      if (chartContainer) {
+        const legendUl = chartContainer.querySelector('ul[role="legend"]');
+        if (legendUl && legendUl.querySelectorAll('li').length >= 7) {
+          legendUl.style.cssText = 'display: grid !important; grid-template-columns: repeat(2, 1fr) !important; column-gap: 15px !important; row-gap: 6px !important; list-style: none !important; padding: 0 !important;';
+        }
+      }
+    }, 100);
+  }
 
   updateStats(allSeries);
   updateTable(allSeries, weeks);
@@ -1172,11 +1267,18 @@ function getColOrder() {
       return vb - va;
     });
   } else {
+    // Default: sort by latest week's rate descending
+    const weeks = lastTableWeeks;
+    const latestWeek = weeks.length > 0 ? weeks[weeks.length - 1] : null;
     order.sort((a, b) => {
+      const pa = latestWeek ? allSeries[a].points.find(p => p.week === latestWeek) : null;
+      const pb = latestWeek ? allSeries[b].points.find(p => p.week === latestWeek) : null;
+      const va = pa ? pa.value : -1;
+      const vb = pb ? pb.value : -1;
+      if (vb !== va) return vb - va;
       const ia = allSeries[a].item, ib = allSeries[b].item;
       return (ia.podCn || '').localeCompare(ib.podCn || '')
-        || (ia.podPort || '').localeCompare(ib.podPort || '')
-        || (ia.pol || '').localeCompare(ib.pol || '');
+        || (ia.podPort || '').localeCompare(ib.podPort || '');
     });
   }
   return order;
@@ -1191,11 +1293,13 @@ function renderTable() {
   }
 
   // Normal mode: weeks as rows, routes as columns
-  if (titleEl) titleEl.textContent = 'Rate History (Latest 20 weeks)';
-
   const allSeries = lastTableSeries;
   const weeks = lastTableWeeks;
-  const last20 = weeks.slice(-20).reverse();
+  const last15 = weeks.slice(-15).reverse();
+  
+  console.log('renderTable - weeks total:', weeks.length, 'displaying:', last15.length, 'weeks');
+  if (titleEl) titleEl.textContent = 'Rate History (Latest 15 weeks)';
+  
   const colOrder = getColOrder();
 
   let header = '<th>Week</th>';
@@ -1206,7 +1310,7 @@ function renderTable() {
   document.getElementById('tableHeader').innerHTML = header;
 
   let body = '';
-  last20.forEach((w, wi) => {
+  last15.forEach((w, wi) => {
     const isActive = colSortWeek === w;
     body += `<tr>`;
     body += `<td style="font-weight:600; cursor:pointer; ${isActive ? 'background:#e8eaf6;' : ''}" onclick="sortColsByWeek('${w}')">${w}${isActive ? ' &#9660;' : ''}</td>`;
@@ -1214,7 +1318,7 @@ function renderTable() {
       const s = allSeries[ci];
       const p = s.points.find(p => p.week === w);
       const val = p ? p.value : null;
-      const nextW = last20[wi + 1];
+      const nextW = last15[wi + 1];
       const prevP = nextW ? s.points.find(p => p.week === nextW) : null;
       const prevVal = prevP ? prevP.value : null;
       let cls = '', arrow = '';
@@ -1234,7 +1338,7 @@ function renderTable() {
 function renderDestTable() {
   const allSeries = lastTableSeries;
   const weeks = lastTableWeeks;
-  const lastN = weeks.slice(-10).reverse();
+  const lastN = weeks.slice(-15).reverse();
   const pol = allSeries[0]?.item.pol || '';
 
   const titleEl = document.getElementById('tableTitle');
