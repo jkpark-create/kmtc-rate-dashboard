@@ -1267,12 +1267,18 @@ function getColOrder() {
       return vb - va;
     });
   } else {
-    // Default: sort by latest week's rate descending
+    // Default: sort by current week (today's date) rate descending
     const weeks = lastTableWeeks;
-    const latestWeek = weeks.length > 0 ? weeks[weeks.length - 1] : null;
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const dayOfYear = Math.ceil((now - jan1) / 86400000);
+    const wk = Math.ceil((dayOfYear + jan1.getDay()) / 7);
+    const currentWeekStr = `${now.getFullYear()}-W${String(wk).padStart(2, '0')}`;
+    // Find current or most recent week with data <= current week
+    const targetWeek = weeks.filter(w => w <= currentWeekStr).pop() || (weeks.length > 0 ? weeks[weeks.length - 1] : null);
     order.sort((a, b) => {
-      const pa = latestWeek ? allSeries[a].points.find(p => p.week === latestWeek) : null;
-      const pb = latestWeek ? allSeries[b].points.find(p => p.week === latestWeek) : null;
+      const pa = targetWeek ? allSeries[a].points.find(p => p.week === targetWeek) : null;
+      const pb = targetWeek ? allSeries[b].points.find(p => p.week === targetWeek) : null;
       const va = pa ? pa.value : -1;
       const vb = pb ? pb.value : -1;
       if (vb !== va) return vb - va;
