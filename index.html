@@ -54,6 +54,14 @@ body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: 
 .tag .remove { cursor: pointer; font-size: 16px; opacity: 0.6; }
 .tag .remove:hover { opacity: 1; }
 
+.route-conditions-panel { background: white; border-radius: 10px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.route-conditions-panel h3 { font-size: 14px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+.route-conditions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.route-condition-card { background: white; border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.route-condition-card .label { font-size: 12px; color: #888; text-transform: uppercase; }
+.route-condition-meta { font-size: 12px; color: #888; margin-top: 5px; }
+.route-condition-remark { font-size: 11px; color: #1a237e; margin-top: 8px; padding: 6px 8px; background: #e8eaf6; border-radius: 4px; line-height: 1.4; }
+
 /* Stats */
 .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
 .stat-card { background: white; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -235,6 +243,12 @@ tr:hover { background: #f8f9ff; }
         <tbody id="tableBody"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Route Conditions -->
+  <div class="route-conditions-panel" id="conditionsPanel" style="display:none;">
+    <h3>Route Conditions</h3>
+    <div class="route-conditions-grid" id="conditionsGrid"></div>
   </div>
 
   <!-- Comparing Routes -->
@@ -444,6 +458,32 @@ function safeFloat(v) {
 
 function cell(rows, r, c) { return rows[r] && rows[r][c] !== undefined ? rows[r][c] : null; }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function normalizeRemark(value) {
+  const text = String(value ?? '').trim();
+  if (!text || /^\d+\.?\d*$/.test(text)) return '';
+  return text.replace(/\n/g, ' ');
+}
+
+function findRemarkCol(rows, maxRows) {
+  for (let r = 0; r < Math.min(rows.length, maxRows); r++) {
+    for (let c = 0; c < (rows[r] || []).length; c++) {
+      const v = cell(rows, r, c);
+      if (v && /^\s*remarks?\s*$/i.test(String(v))) return c;
+    }
+  }
+  return -1;
+}
+
 // ============ PARSE SEA ============
 function parseSEA(sheetNames, valuesArr) {
   const rates = [];
@@ -468,7 +508,8 @@ function parseSEA(sheetNames, valuesArr) {
 
     const cnCol = is3Col ? 1 : 0;
     const portCol = is3Col ? 2 : 1;
-    const remarkCol = is3Col ? 3 : 2;
+    const detectedRemarkCol = findRemarkCol(rows, weekRow + 3);
+    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : (is3Col ? 3 : 2);
     const dataStartRow = weekRow + 3;
     const polCountry = is3Col ? String(cell(rows, weekRow, 1) || '').trim() : '';
 
@@ -482,6 +523,7 @@ function parseSEA(sheetNames, valuesArr) {
 
     let curCn = '';
     let activePols = [name.trim()];
+    let curRemark = '';
 
     for (let r = dataStartRow; r < rows.length; r++) {
       // 3-column: parse POL group from col A
@@ -501,11 +543,16 @@ function parseSEA(sheetNames, valuesArr) {
 
       const cv = cell(rows, r, cnCol);
       const pv = cell(rows, r, portCol);
-      if (cv) curCn = String(cv).trim().split('\n')[0];
+      if (cv) {
+        curCn = String(cv).trim().split('\n')[0];
+        curRemark = '';
+      }
       if (!pv) continue;
       const podPort = String(pv).trim();
       const rv = cell(rows, r, remarkCol);
-      const remark = (rv && String(rv).trim() && !/^\d+\.?\d*$/.test(String(rv).trim())) ? String(rv).trim().replace(/\n/g,' ') : '';
+      const rawRemark = normalizeRemark(rv);
+      if (rawRemark) curRemark = rawRemark;
+      const remark = rawRemark || curRemark;
 
       for (const w of weeks) {
         const r20 = safeFloat(cell(rows, r, w.c20));
@@ -545,17 +592,26 @@ function parseCNHK(sheetNames, valuesArr) {
       if (r3 && String(r3).includes('AB')) { hasABCD = true; break; }
     }
     const stride = weeks.length >= 2 ? weeks[1].col - weeks[0].col : 4;
+    const detectedRemarkCol = findRemarkCol(rows, 5);
+    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : 2;
 
     let curCn = '';
+    let curRemark = '';
     for (let r = 4; r < rows.length; r++) {
       const cv = cell(rows, r, 0);
       const pv = cell(rows, r, 1);
-      if (cv) { const cc = String(cv).trim(); if (cc && cc.length <= 5 && /^[A-Za-z.]+$/.test(cc)) curCn = cc; }
+      if (cv) {
+        curRemark = '';
+        const cc = String(cv).trim();
+        if (cc && cc.length <= 5 && /^[A-Za-z.]+$/.test(cc)) curCn = cc;
+      }
       if (!pv) continue;
       const podPort = String(pv).trim();
       if (podPort.includes('POD')) continue;
-      const rv = cell(rows, r, 2);
-      const remark = (rv && String(rv).trim() && !/^\d+\.?\d*$/.test(String(rv).trim())) ? String(rv).trim().replace(/\n/g,' ') : '';
+      const rv = cell(rows, r, remarkCol);
+      const rawRemark = normalizeRemark(rv);
+      if (rawRemark) curRemark = rawRemark;
+      const remark = rawRemark || curRemark;
 
       for (const w of weeks) {
         const c = w.col;
@@ -1004,6 +1060,8 @@ function updateChart() {
   if (compareItems.length === 0) {
     if (chart) { chart.destroy(); chart = null; }
     document.getElementById('statsRow').innerHTML = '';
+    document.getElementById('conditionsPanel').style.display = 'none';
+    document.getElementById('conditionsGrid').innerHTML = '';
     document.getElementById('tableHeader').innerHTML = '';
     document.getElementById('tableBody').innerHTML = '';
     return;
@@ -1134,6 +1192,7 @@ function updateChart() {
 
   updateStats(allSeries);
   updateTable(allSeries, weeks);
+  updateRouteConditions(allSeries);
 }
 
 function setRange(el) {
@@ -1153,6 +1212,31 @@ function getCurrentWeekRate(points) {
   return best;
 }
 
+function updateRouteConditions(allSeries) {
+  const panel = document.getElementById('conditionsPanel');
+  const grid = document.getElementById('conditionsGrid');
+  const cards = allSeries.map(s => {
+    const pts = s.points;
+    if (!pts.length) return '';
+    const cur = getCurrentWeekRate(pts) || pts[pts.length - 1];
+    const meta = cur ? `${escapeHtml(cur.week)} · $${cur.value.toLocaleString()}` : '';
+    return `<div class="route-condition-card" style="border-top:3px solid ${s.color};">
+      <div class="label">${escapeHtml(s.item.label)}</div>
+      <div class="route-condition-meta">${meta}</div>
+      <div class="route-condition-remark">${s.remark ? escapeHtml(s.remark) : 'No remark'}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  if (!cards) {
+    panel.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+
+  grid.innerHTML = cards;
+  panel.style.display = 'block';
+}
+
 function updateStats(allSeries) {
   // Compact summary mode when many routes
   if (allSeries.length > 6) {
@@ -1169,7 +1253,7 @@ function updateStats(allSeries) {
       const prev = curIdx > 0 ? pts[curIdx - 1] : null;
       const diff = prev ? cur.value - prev.value : 0;
       const label = isDestFixed ? s.item.pol : (s.item.podPort || s.item.podCn);
-      return { label, routeLabel: s.item.label, latest: cur.value, week: cur.week, diff, color: s.color, remark: s.remark };
+      return { label, latest: cur.value, week: cur.week, diff, color: s.color };
     }).filter(Boolean).sort((a, b) => b.latest - a.latest);
 
     if (summaries.length === 0) { document.getElementById('statsRow').innerHTML = ''; return; }
@@ -1179,26 +1263,6 @@ function updateStats(allSeries) {
     const lowest = summaries[summaries.length - 1];
     const weekLabel = summaries[0].week;
     const modeLabel = isDestFixed ? 'origins compared' : 'destinations compared';
-    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[ch]));
-    const conditionCards = summaries.map(s => `
-      <div class="stat-card" style="border-top:3px solid ${s.color}; padding:14px;">
-        <div class="label">${escapeHtml(s.routeLabel)}</div>
-        <div style="font-size:12px; color:#888; margin-top:5px;">${escapeHtml(s.week)} · $${s.latest.toLocaleString()}</div>
-        <div style="font-size:11px; color:#1a237e; margin-top:8px; padding:6px 8px; background:#e8eaf6; border-radius:4px; line-height:1.4;">${s.remark ? escapeHtml(s.remark) : 'No remark'}</div>
-      </div>`).join('');
-    const conditionsHtml = conditionCards ? `
-      <div style="grid-column:1 / -1;">
-        <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase; margin:2px 0 8px;">Route Conditions</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
-          ${conditionCards}
-        </div>
-      </div>` : '';
 
     const html = `
       <div class="stat-card">
@@ -1219,8 +1283,7 @@ function updateStats(allSeries) {
         <div class="label">LOWEST</div>
         <div class="value" style="color:${lowest.color}">$${lowest.latest.toLocaleString()}</div>
         <div style="font-size:13px; color:#888; margin-top:3px;">${lowest.label}</div>
-      </div>
-      ${conditionsHtml}`;
+      </div>`;
     document.getElementById('statsRow').innerHTML = html;
     return;
   }
@@ -1239,16 +1302,11 @@ function updateStats(allSeries) {
     const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
     const arrow = diff > 0 ? '&#9650;' : diff < 0 ? '&#9660;' : '&#8211;';
 
-    const remarkHtml = s.remark
-      ? `<div style="font-size:11px; color:#1a237e; margin-top:6px; padding:4px 8px; background:#e8eaf6; border-radius:4px; line-height:1.4;">${s.remark}</div>`
-      : '';
-
     return `<div class="stat-card">
       <div class="label">${s.item.label}</div>
       <div class="value" style="color:${s.color}">$${latest.toLocaleString()}</div>
       <div class="change ${cls}">${arrow} $${Math.abs(diff).toLocaleString()} (${pct}%) vs prev week</div>
       <div style="font-size:12px; color:#888; margin-top:5px;">Range: $${min.toLocaleString()} ~ $${max.toLocaleString()}</div>
-      ${remarkHtml}
     </div>`;
   }).join('');
   document.getElementById('statsRow').innerHTML = html;

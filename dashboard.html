@@ -1,8 +1,12 @@
 <!DOCTYPE html>
+<!-- Version: 2026-04-16T10:50:00Z -->
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>KMTC Freight Rate Dashboard</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -50,6 +54,14 @@ body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: 
 .tag .remove { cursor: pointer; font-size: 16px; opacity: 0.6; }
 .tag .remove:hover { opacity: 1; }
 
+.route-conditions-panel { background: white; border-radius: 10px; padding: 15px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.route-conditions-panel h3 { font-size: 14px; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+.route-conditions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.route-condition-card { background: white; border-radius: 10px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.route-condition-card .label { font-size: 12px; color: #888; text-transform: uppercase; }
+.route-condition-meta { font-size: 12px; color: #888; margin-top: 5px; }
+.route-condition-remark { font-size: 11px; color: #1a237e; margin-top: 8px; padding: 6px 8px; background: #e8eaf6; border-radius: 4px; line-height: 1.4; }
+
 /* Stats */
 .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
 .stat-card { background: white; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -85,6 +97,36 @@ tr:hover { background: #f8f9ff; }
 
 /* Color palette for chart lines */
 .hidden { display: none; }
+
+/* Chart Legend - Multi-column layout */
+.chart-container canvas ~ * {
+  max-width: 100%;
+}
+.chartjs-legend {
+  padding: 10px;
+}
+.chartjs-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+/* Legend grid layout for many items */
+.chart-container ul[role="legend"] {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  column-gap: 15px !important;
+  row-gap: 6px !important;
+  list-style: none !important;
+  padding: 0 !important;
+}
+.chart-container ul[role="legend"] li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 
 /* Auth */
 #authOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #1a237e, #283593); display: flex; align-items: center; justify-content: center; z-index: 9999; }
@@ -181,10 +223,10 @@ tr:hover { background: #f8f9ff; }
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h2>Rate Trend</h2>
       <div class="chart-options">
-        <span class="chip active" data-range="all" onclick="setRange(this)">All</span>
+        <span class="chip" data-range="all" onclick="setRange(this)">All</span>
         <span class="chip" data-range="52" onclick="setRange(this)">1Y</span>
         <span class="chip" data-range="26" onclick="setRange(this)">6M</span>
-        <span class="chip" data-range="13" onclick="setRange(this)">3M</span>
+        <span class="chip active" data-range="13" onclick="setRange(this)">3M</span>
       </div>
     </div>
     <div class="chart-container">
@@ -194,13 +236,19 @@ tr:hover { background: #f8f9ff; }
 
   <!-- Rate History Table -->
   <div class="chart-panel">
-    <h2 id="tableTitle">Rate History (Latest 20 weeks)</h2>
+    <h2 id="tableTitle">Rate History (Latest 15 weeks)</h2>
     <div class="table-panel" style="max-height:400px; overflow-y:auto; box-shadow:none; padding:0;">
       <table id="rateTable">
         <thead><tr id="tableHeader"></tr></thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Route Conditions -->
+  <div class="route-conditions-panel" id="conditionsPanel" style="display:none;">
+    <h3>Route Conditions</h3>
+    <div class="route-conditions-grid" id="conditionsGrid"></div>
   </div>
 
   <!-- Comparing Routes -->
@@ -217,6 +265,21 @@ tr:hover { background: #f8f9ff; }
 </div>
 </div><!-- /appWrap -->
 
+<script>
+window.addEventListener('load', () => {
+  // Force reload on every page load
+  if (!window.location.hash.includes('nocache')) {
+    window.location.hash = 'nocache=' + Date.now();
+    window.location.reload();
+  }
+});
+// Prevent caching
+if (navigator.serviceWorker) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => registration.unregister());
+  });
+}
+</script>
 <script>
 // ============ AUTH (Token Client for Sheets API access) ============
 const GOOGLE_CLIENT_ID = '409330651463-giie223egsskdq10etn642gjtron1hq5.apps.googleusercontent.com';
@@ -304,7 +367,10 @@ window.addEventListener('load', checkSession);
 let DATA = [];
 let compareItems = [];
 let chart = null;
-let currentRange = 'all';
+let currentRange = '13'; // Force 3M (13 weeks) as default
+
+console.log('DASHBOARD LOADED - Version 2026-04-16T10:50:00Z');
+console.log('currentRange initialized to:', currentRange);
 
 const COLORS = [
   '#1a237e','#e53935','#43a047','#fb8c00','#8e24aa',
@@ -392,6 +458,32 @@ function safeFloat(v) {
 
 function cell(rows, r, c) { return rows[r] && rows[r][c] !== undefined ? rows[r][c] : null; }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function normalizeRemark(value) {
+  const text = String(value ?? '').trim();
+  if (!text || /^\d+\.?\d*$/.test(text)) return '';
+  return text.replace(/\n/g, ' ');
+}
+
+function findRemarkCol(rows, maxRows) {
+  for (let r = 0; r < Math.min(rows.length, maxRows); r++) {
+    for (let c = 0; c < (rows[r] || []).length; c++) {
+      const v = cell(rows, r, c);
+      if (v && /^\s*remarks?\s*$/i.test(String(v))) return c;
+    }
+  }
+  return -1;
+}
+
 // ============ PARSE SEA ============
 function parseSEA(sheetNames, valuesArr) {
   const rates = [];
@@ -416,7 +508,8 @@ function parseSEA(sheetNames, valuesArr) {
 
     const cnCol = is3Col ? 1 : 0;
     const portCol = is3Col ? 2 : 1;
-    const remarkCol = is3Col ? 3 : 2;
+    const detectedRemarkCol = findRemarkCol(rows, weekRow + 3);
+    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : (is3Col ? 3 : 2);
     const dataStartRow = weekRow + 3;
     const polCountry = is3Col ? String(cell(rows, weekRow, 1) || '').trim() : '';
 
@@ -430,6 +523,7 @@ function parseSEA(sheetNames, valuesArr) {
 
     let curCn = '';
     let activePols = [name.trim()];
+    let curRemark = '';
 
     for (let r = dataStartRow; r < rows.length; r++) {
       // 3-column: parse POL group from col A
@@ -449,11 +543,16 @@ function parseSEA(sheetNames, valuesArr) {
 
       const cv = cell(rows, r, cnCol);
       const pv = cell(rows, r, portCol);
-      if (cv) curCn = String(cv).trim().split('\n')[0];
+      if (cv) {
+        curCn = String(cv).trim().split('\n')[0];
+        curRemark = '';
+      }
       if (!pv) continue;
       const podPort = String(pv).trim();
       const rv = cell(rows, r, remarkCol);
-      const remark = (rv && String(rv).trim() && !/^\d+\.?\d*$/.test(String(rv).trim())) ? String(rv).trim().replace(/\n/g,' ') : '';
+      const rawRemark = normalizeRemark(rv);
+      if (rawRemark) curRemark = rawRemark;
+      const remark = rawRemark || curRemark;
 
       for (const w of weeks) {
         const r20 = safeFloat(cell(rows, r, w.c20));
@@ -493,17 +592,26 @@ function parseCNHK(sheetNames, valuesArr) {
       if (r3 && String(r3).includes('AB')) { hasABCD = true; break; }
     }
     const stride = weeks.length >= 2 ? weeks[1].col - weeks[0].col : 4;
+    const detectedRemarkCol = findRemarkCol(rows, 5);
+    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : 2;
 
     let curCn = '';
+    let curRemark = '';
     for (let r = 4; r < rows.length; r++) {
       const cv = cell(rows, r, 0);
       const pv = cell(rows, r, 1);
-      if (cv) { const cc = String(cv).trim(); if (cc && cc.length <= 5 && /^[A-Za-z.]+$/.test(cc)) curCn = cc; }
+      if (cv) {
+        curRemark = '';
+        const cc = String(cv).trim();
+        if (cc && cc.length <= 5 && /^[A-Za-z.]+$/.test(cc)) curCn = cc;
+      }
       if (!pv) continue;
       const podPort = String(pv).trim();
       if (podPort.includes('POD')) continue;
-      const rv = cell(rows, r, 2);
-      const remark = (rv && String(rv).trim() && !/^\d+\.?\d*$/.test(String(rv).trim())) ? String(rv).trim().replace(/\n/g,' ') : '';
+      const rv = cell(rows, r, remarkCol);
+      const rawRemark = normalizeRemark(rv);
+      if (rawRemark) curRemark = rawRemark;
+      const remark = rawRemark || curRemark;
 
       for (const w of weeks) {
         const c = w.col;
@@ -952,6 +1060,8 @@ function updateChart() {
   if (compareItems.length === 0) {
     if (chart) { chart.destroy(); chart = null; }
     document.getElementById('statsRow').innerHTML = '';
+    document.getElementById('conditionsPanel').style.display = 'none';
+    document.getElementById('conditionsGrid').innerHTML = '';
     document.getElementById('tableHeader').innerHTML = '';
     document.getElementById('tableBody').innerHTML = '';
     return;
@@ -1006,10 +1116,40 @@ function updateChart() {
       plugins: {
         legend: {
           position: compareItems.length > 6 ? 'right' : 'top',
+          align: compareItems.length > 6 ? 'start' : 'end',
           labels: {
             usePointStyle: true,
             padding: compareItems.length > 6 ? 8 : 15,
-            font: { size: compareItems.length > 6 ? 11 : 12 }
+            font: { size: compareItems.length > 6 ? 10 : 12 },
+            boxPadding: 5,
+            generateLabels: (chart) => {
+              if (compareItems.length <= 6) {
+                return Chart.defaults.plugins.legend.labels.generateLabels(chart);
+              }
+              // Reorder datasets for balanced 2-column layout
+              const datasets = chart.data.datasets;
+              const n = datasets.length;
+              const mid = Math.ceil(n / 2);
+              const reordered = [];
+              
+              // Interleave: left column items, then right column items
+              for (let i = 0; i < mid; i++) {
+                reordered.push(datasets[i]);
+                if (mid + i < n) {
+                  reordered.push(datasets[mid + i]);
+                }
+              }
+              
+              return reordered.map((dataset, i) => ({
+                text: dataset.label,
+                fillStyle: dataset.borderColor,
+                strokeStyle: dataset.borderColor,
+                lineWidth: 2,
+                hidden: false,
+                index: datasets.indexOf(dataset),
+                pointStyle: 'circle'
+              }));
+            }
           }
         },
         tooltip: {
@@ -1037,8 +1177,22 @@ function updateChart() {
     }
   });
 
+  // Apply two-column layout to legend when there are many items
+  if (compareItems.length > 6) {
+    setTimeout(() => {
+      const chartContainer = document.querySelector('.chart-container');
+      if (chartContainer) {
+        const legendUl = chartContainer.querySelector('ul[role="legend"]');
+        if (legendUl && legendUl.querySelectorAll('li').length >= 7) {
+          legendUl.style.cssText = 'display: grid !important; grid-template-columns: repeat(2, 1fr) !important; column-gap: 15px !important; row-gap: 6px !important; list-style: none !important; padding: 0 !important;';
+        }
+      }
+    }, 100);
+  }
+
   updateStats(allSeries);
   updateTable(allSeries, weeks);
+  updateRouteConditions(allSeries);
 }
 
 function setRange(el) {
@@ -1058,6 +1212,31 @@ function getCurrentWeekRate(points) {
   return best;
 }
 
+function updateRouteConditions(allSeries) {
+  const panel = document.getElementById('conditionsPanel');
+  const grid = document.getElementById('conditionsGrid');
+  const cards = allSeries.map(s => {
+    const pts = s.points;
+    if (!pts.length) return '';
+    const cur = getCurrentWeekRate(pts) || pts[pts.length - 1];
+    const meta = cur ? `${escapeHtml(cur.week)} · $${cur.value.toLocaleString()}` : '';
+    return `<div class="route-condition-card" style="border-top:3px solid ${s.color};">
+      <div class="label">${escapeHtml(s.item.label)}</div>
+      <div class="route-condition-meta">${meta}</div>
+      <div class="route-condition-remark">${s.remark ? escapeHtml(s.remark) : 'No remark'}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  if (!cards) {
+    panel.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+
+  grid.innerHTML = cards;
+  panel.style.display = 'block';
+}
+
 function updateStats(allSeries) {
   // Compact summary mode when many routes
   if (allSeries.length > 6) {
@@ -1074,7 +1253,7 @@ function updateStats(allSeries) {
       const prev = curIdx > 0 ? pts[curIdx - 1] : null;
       const diff = prev ? cur.value - prev.value : 0;
       const label = isDestFixed ? s.item.pol : (s.item.podPort || s.item.podCn);
-      return { label, routeLabel: s.item.label, latest: cur.value, week: cur.week, diff, color: s.color, remark: s.remark };
+      return { label, latest: cur.value, week: cur.week, diff, color: s.color };
     }).filter(Boolean).sort((a, b) => b.latest - a.latest);
 
     if (summaries.length === 0) { document.getElementById('statsRow').innerHTML = ''; return; }
@@ -1084,26 +1263,6 @@ function updateStats(allSeries) {
     const lowest = summaries[summaries.length - 1];
     const weekLabel = summaries[0].week;
     const modeLabel = isDestFixed ? 'origins compared' : 'destinations compared';
-    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[ch]));
-    const conditionCards = summaries.map(s => `
-      <div class="stat-card" style="border-top:3px solid ${s.color}; padding:14px;">
-        <div class="label">${escapeHtml(s.routeLabel)}</div>
-        <div style="font-size:12px; color:#888; margin-top:5px;">${escapeHtml(s.week)} · $${s.latest.toLocaleString()}</div>
-        <div style="font-size:11px; color:#1a237e; margin-top:8px; padding:6px 8px; background:#e8eaf6; border-radius:4px; line-height:1.4;">${s.remark ? escapeHtml(s.remark) : 'No remark'}</div>
-      </div>`).join('');
-    const conditionsHtml = conditionCards ? `
-      <div style="grid-column:1 / -1;">
-        <div style="font-size:12px; color:#666; font-weight:600; text-transform:uppercase; margin:2px 0 8px;">Route Conditions</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
-          ${conditionCards}
-        </div>
-      </div>` : '';
 
     const html = `
       <div class="stat-card">
@@ -1124,8 +1283,7 @@ function updateStats(allSeries) {
         <div class="label">LOWEST</div>
         <div class="value" style="color:${lowest.color}">$${lowest.latest.toLocaleString()}</div>
         <div style="font-size:13px; color:#888; margin-top:3px;">${lowest.label}</div>
-      </div>
-      ${conditionsHtml}`;
+      </div>`;
     document.getElementById('statsRow').innerHTML = html;
     return;
   }
@@ -1144,16 +1302,11 @@ function updateStats(allSeries) {
     const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
     const arrow = diff > 0 ? '&#9650;' : diff < 0 ? '&#9660;' : '&#8211;';
 
-    const remarkHtml = s.remark
-      ? `<div style="font-size:11px; color:#1a237e; margin-top:6px; padding:4px 8px; background:#e8eaf6; border-radius:4px; line-height:1.4;">${s.remark}</div>`
-      : '';
-
     return `<div class="stat-card">
       <div class="label">${s.item.label}</div>
       <div class="value" style="color:${s.color}">$${latest.toLocaleString()}</div>
       <div class="change ${cls}">${arrow} $${Math.abs(diff).toLocaleString()} (${pct}%) vs prev week</div>
       <div style="font-size:12px; color:#888; margin-top:5px;">Range: $${min.toLocaleString()} ~ $${max.toLocaleString()}</div>
-      ${remarkHtml}
     </div>`;
   }).join('');
   document.getElementById('statsRow').innerHTML = html;
@@ -1193,11 +1346,24 @@ function getColOrder() {
       return vb - va;
     });
   } else {
+    // Default: sort by current week (today's date) rate descending
+    const weeks = lastTableWeeks;
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const dayOfYear = Math.ceil((now - jan1) / 86400000);
+    const wk = Math.ceil((dayOfYear + jan1.getDay()) / 7);
+    const currentWeekStr = `${now.getFullYear()}-W${String(wk).padStart(2, '0')}`;
+    // Find current or most recent week with data <= current week
+    const targetWeek = weeks.filter(w => w <= currentWeekStr).pop() || (weeks.length > 0 ? weeks[weeks.length - 1] : null);
     order.sort((a, b) => {
+      const pa = targetWeek ? allSeries[a].points.find(p => p.week === targetWeek) : null;
+      const pb = targetWeek ? allSeries[b].points.find(p => p.week === targetWeek) : null;
+      const va = pa ? pa.value : -1;
+      const vb = pb ? pb.value : -1;
+      if (vb !== va) return vb - va;
       const ia = allSeries[a].item, ib = allSeries[b].item;
       return (ia.podCn || '').localeCompare(ib.podCn || '')
-        || (ia.podPort || '').localeCompare(ib.podPort || '')
-        || (ia.pol || '').localeCompare(ib.pol || '');
+        || (ia.podPort || '').localeCompare(ib.podPort || '');
     });
   }
   return order;
@@ -1212,11 +1378,13 @@ function renderTable() {
   }
 
   // Normal mode: weeks as rows, routes as columns
-  if (titleEl) titleEl.textContent = 'Rate History (Latest 20 weeks)';
-
   const allSeries = lastTableSeries;
   const weeks = lastTableWeeks;
-  const last20 = weeks.slice(-20).reverse();
+  const last15 = weeks.slice(-15).reverse();
+  
+  console.log('renderTable - weeks total:', weeks.length, 'displaying:', last15.length, 'weeks');
+  if (titleEl) titleEl.textContent = 'Rate History (Latest 15 weeks)';
+  
   const colOrder = getColOrder();
 
   let header = '<th>Week</th>';
@@ -1227,7 +1395,7 @@ function renderTable() {
   document.getElementById('tableHeader').innerHTML = header;
 
   let body = '';
-  last20.forEach((w, wi) => {
+  last15.forEach((w, wi) => {
     const isActive = colSortWeek === w;
     body += `<tr>`;
     body += `<td style="font-weight:600; cursor:pointer; ${isActive ? 'background:#e8eaf6;' : ''}" onclick="sortColsByWeek('${w}')">${w}${isActive ? ' &#9660;' : ''}</td>`;
@@ -1235,7 +1403,7 @@ function renderTable() {
       const s = allSeries[ci];
       const p = s.points.find(p => p.week === w);
       const val = p ? p.value : null;
-      const nextW = last20[wi + 1];
+      const nextW = last15[wi + 1];
       const prevP = nextW ? s.points.find(p => p.week === nextW) : null;
       const prevVal = prevP ? prevP.value : null;
       let cls = '', arrow = '';
@@ -1255,7 +1423,7 @@ function renderTable() {
 function renderDestTable() {
   const allSeries = lastTableSeries;
   const weeks = lastTableWeeks;
-  const lastN = weeks.slice(-10).reverse();
+  const lastN = weeks.slice(-15).reverse();
   const pol = allSeries[0]?.item.pol || '';
 
   const titleEl = document.getElementById('tableTitle');
