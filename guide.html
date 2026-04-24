@@ -376,8 +376,8 @@ body.lang-en tr[data-lang="ko"] { display: none; }
 <!-- 5. Stats -->
 <section id="stats">
   <h2><span data-lang="ko">5. 운임 요약 카드</span><span data-lang="en">5. Rate Summary Cards</span></h2>
-  <p data-lang="ko">각 활성 루트에 대해 최신 운임, 전주 대비 변동, 이력 범위, 그리고 원본 파일의 <strong>운임 조건(Remark)</strong>을 요약 카드로 표시합니다.</p>
-  <p data-lang="en">For each active route, a summary card shows the latest rate, week-over-week change, historical range, and <strong>rate conditions (remarks)</strong> from the source file.</p>
+  <p data-lang="ko">각 활성 루트에 대해 최신 운임, 전주 대비 변동, 이력 범위를 요약 카드로 표시합니다. 원본 파일의 <strong>운임 조건(Remark)</strong>은 Rate History 아래의 <strong>Route Conditions</strong> 영역에서 별도로 확인합니다.</p>
+  <p data-lang="en">For each active route, a summary card shows the latest rate, week-over-week change, and historical range. <strong>Rate conditions (remarks)</strong> from the source file are shown separately in <strong>Route Conditions</strong> below Rate History.</p>
 
   <div class="mock">
     <div class="mock-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span> <span data-lang="ko">운임 요약</span><span data-lang="en">Rate Summary</span></div>
@@ -388,24 +388,18 @@ body.lang-en tr[data-lang="ko"] { display: none; }
           <div class="m-val" style="color:#1a237e;">$500</div>
           <div class="m-chg" style="color:#43a047;">&#9660; $50 (-9.1%) vs prev week</div>
           <div style="font-size:10px; color:#888; margin-top:3px;">Range: $450 ~ $750</div>
-          <div class="callout blue" style="margin:6px 0 0; padding:1px;">
-            <span class="callout-label blue" style="top:-10px; font-size:9px;">Remark</span>
-            <div class="m-remark">Subject to BAF CAF CIC LSS</div>
-          </div>
         </div>
         <div class="m-stat">
           <div class="m-label">NBO -> PUS (40')</div>
           <div class="m-val" style="color:#e53935;">$1,200</div>
           <div class="m-chg" style="color:#e53935;">&#9650; $200 (+20.0%) vs prev week</div>
           <div style="font-size:10px; color:#888; margin-top:3px;">Range: $800 ~ $1,400</div>
-          <div class="m-remark">Subject to BAF CAF CIC LSS</div>
         </div>
         <div class="m-stat">
           <div class="m-label">VN HPH -> PUS (40')</div>
           <div class="m-val" style="color:#43a047;">$300</div>
           <div class="m-chg">&#8211; $0 (0%) vs prev week</div>
           <div style="font-size:10px; color:#888; margin-top:3px;">Range: $250 ~ $400</div>
-          <div class="m-remark">Subject to LCC,LSS (INCLUDE EBS,FAF,CRC)</div>
         </div>
       </div>
     </div>
@@ -417,15 +411,17 @@ body.lang-en tr[data-lang="ko"] { display: none; }
     <li><strong>최신 운임</strong> &mdash; 가장 최근 주차의 USD 운임</li>
     <li><strong>변동</strong> &mdash; <span style="color:#e53935;">&#9650; 빨간색 = 상승</span>, <span style="color:#43a047;">&#9660; 초록색 = 하락</span></li>
     <li><strong>범위</strong> &mdash; 전체 기간의 최소 ~ 최대 운임</li>
-    <li><strong>Remark</strong> (파란 박스) &mdash; 원본 Excel 파일의 운임 조건 (할증료, 포함 항목 등)</li>
   </ul>
   <ul data-lang="en">
     <li><strong>Route label</strong> &mdash; POL -> POD (container size)</li>
     <li><strong>Latest rate</strong> &mdash; Most recent week's rate in USD</li>
     <li><strong>Change</strong> &mdash; <span style="color:#e53935;">&#9650; Red = increase</span>, <span style="color:#43a047;">&#9660; Green = decrease</span></li>
     <li><strong>Range</strong> &mdash; Min ~ Max rate across all available weeks</li>
-    <li><strong>Remark</strong> (blue box) &mdash; Rate conditions from the source Excel file (surcharges, inclusions, etc.)</li>
   </ul>
+
+  <h3><span data-lang="ko">Route Conditions</span><span data-lang="en">Route Conditions</span></h3>
+  <p data-lang="ko">운임 조건은 <strong>Rate History</strong>와 <strong>Comparing Routes</strong> 사이에 표시됩니다. 원본 시트에서 같은 국가/권역 그룹의 첫 행에만 Remark가 있는 경우에는 해당 조건을 아래 하위 POD 행에도 이어서 보여줍니다.</p>
+  <p data-lang="en">Rate conditions appear between <strong>Rate History</strong> and <strong>Comparing Routes</strong>. If the source sheet places a remark only on the first row of a country or area group, that condition is carried down to the child POD rows.</p>
 
   <h3><span data-lang="ko">다수 루트 요약 모드</span><span data-lang="en">Multi-Route Summary Mode</span></h3>
   <p data-lang="ko">7개 이상의 루트를 비교할 때는 요약 카드로 자동 전환됩니다: <strong>총 루트 수(주차 표시)</strong>, <strong>평균 운임</strong>, <strong>최고/최저</strong>. 모든 운임은 현재 주차 기준으로 표시됩니다.</p>
