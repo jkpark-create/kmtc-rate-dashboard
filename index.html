@@ -17,6 +17,15 @@ body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: 
 .header { background: linear-gradient(135deg, #1a237e, #283593); color: white; padding: 20px 30px; display: flex; align-items: center; justify-content: space-between; }
 .header h1 { font-size: 22px; font-weight: 600; }
 .header .subtitle { font-size: 13px; opacity: 0.8; }
+.header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.header-link, .header-button, .source-menu summary { color: white; font-size: 12px; text-decoration: none; background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 15px; border: none; cursor: pointer; font-family: inherit; line-height: 1.2; }
+.header-link:hover, .header-button:hover, .source-menu[open] summary, .source-menu summary:hover { background: rgba(255,255,255,0.25); }
+.source-menu { position: relative; }
+.source-menu summary { list-style: none; }
+.source-menu summary::-webkit-details-marker { display: none; }
+.source-menu-list { position: absolute; top: calc(100% + 8px); right: 0; min-width: 170px; background: white; color: #333; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); padding: 6px; z-index: 1000; }
+.source-menu-list a { display: block; padding: 8px 10px; border-radius: 6px; color: #1a237e; font-size: 12px; text-decoration: none; white-space: nowrap; }
+.source-menu-list a:hover { background: #e8eaf6; }
 .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
 /* Filter Panel */
@@ -137,6 +146,12 @@ tr:hover { background: #f8f9ff; }
 .auth-user { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(255,255,255,0.15); border-radius: 20px; font-size: 13px; cursor: pointer; color: white; }
 .auth-user img { width: 28px; height: 28px; border-radius: 50%; }
 .auth-user:hover { background: rgba(255,255,255,0.25); }
+
+@media (max-width: 800px) {
+  .header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .header-actions { justify-content: flex-start; gap: 8px; }
+  .source-menu-list { left: 0; right: auto; }
+}
 </style>
 </head>
 <body>
@@ -160,10 +175,17 @@ tr:hover { background: #f8f9ff; }
     <h1>KMTC Freight Rate Dashboard</h1>
     <div class="subtitle">Weekly Rate Tracking & Trend Analysis</div>
   </div>
-  <div style="display:flex; align-items:center; gap:15px;">
+  <div class="header-actions">
     <div style="font-size:13px; opacity:0.7;" id="lastUpdate"></div>
-    <a href="guide.html" style="color:white; font-size:12px; text-decoration:none; background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:15px;" title="User Guide">Guide</a>
-    <button onclick="refreshData()" style="color:white; font-size:12px; background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:15px; border:none; cursor:pointer;" title="Refresh from Google Sheets">Refresh</button>
+    <details class="source-menu">
+      <summary title="Open source Google Sheets">Source Sheets</summary>
+      <div class="source-menu-list">
+        <a href="https://docs.google.com/spreadsheets/d/1Itzp1CccniJngry-535jLnFvfDuuG0se/edit" target="_blank" rel="noopener">SEA / ETC</a>
+        <a href="https://docs.google.com/spreadsheets/d/1T8ZZeJ0cr_jWvyki9OQHKmD8qW2Z4Ai4SgBn3Xkg3vk/edit" target="_blank" rel="noopener">CN / HK</a>
+      </div>
+    </details>
+    <a class="header-link" href="guide.html" title="User Guide">Guide</a>
+    <button class="header-button" onclick="refreshData()" title="Refresh from Google Sheets">Refresh</button>
     <div class="auth-user" onclick="signOut()" title="로그아웃">
       <img id="userPhoto" src="" alt="">
       <span id="userName"></span>
