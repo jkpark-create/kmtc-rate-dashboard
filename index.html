@@ -981,7 +981,7 @@ function addToCompare() {
 
   selectedPols.forEach(pol => {
     const polSrc = DATA.find(d => d.pol === pol)?.src;
-    const tier = (polSrc === 'CN_HK') ? 'CD' : 'ALL';
+    const tier = (polSrc === 'CN_HK') ? 'AB' : 'ALL';
 
     if (!podCn && !podPort) {
       // POD Country=All, Port=All → expand by destination country
