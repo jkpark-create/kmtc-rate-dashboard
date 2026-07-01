@@ -8,6 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>KMTC Freight Rate Dashboard</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
@@ -329,16 +330,16 @@ if (navigator.serviceWorker) {
 }
 </script>
 <script>
-// ============ AUTH (OAuth2 redirect flow, shared with -3W dashboard style) ============
+// ============ AUTH (Google Identity Services token client) ============
 const GOOGLE_CLIENT_ID = '409330651463-giie223egsskdq10etn642gjtron1hq5.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.readonly email profile openid';
 const ALLOWED_DOMAINS = ['ekmtc.com'];
-const REDIRECT_URI = location.origin + '/kmtc-rate-dashboard/';
 const AUTH_TOKEN_KEY = 'gtoken';
 const AUTH_USER_KEY = 'guser';
 
 let accessToken = null;
 let currentUser = null;
+let tokenClient = null;
 
 function showAuthError(message) {
   const el = document.getElementById('authError');
@@ -371,35 +372,35 @@ function clearAuthSession(keepUser) {
   }
 }
 
-function doSignIn() {
-  const prevUser = storedUser();
-  const params = new URLSearchParams({
+function initTokenClient() {
+  if (tokenClient) return true;
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    showAuthError('Google sign-in library is still loading. Please try again.');
+    return false;
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    response_type: 'token',
     scope: SCOPES,
-    include_granted_scopes: 'true'
+    callback: handleTokenResponse,
   });
-  if (prevUser && prevUser.email) params.set('login_hint', prevUser.email);
-  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+  return true;
 }
 
-async function handleRedirect() {
-  const hash = location.hash.substring(1);
-  if (!hash) return false;
+function doSignIn() {
+  if (!initTokenClient()) return;
+  const prevUser = storedUser();
+  const options = {};
+  if (prevUser && prevUser.email) options.login_hint = prevUser.email;
+  tokenClient.requestAccessToken(options);
+}
 
-  const params = new URLSearchParams(hash);
-  const error = params.get('error');
-  const token = params.get('access_token');
-  history.replaceState(null, '', location.pathname + location.search);
-
-  if (error) {
-    showAuthError(error);
-    return true;
+async function handleTokenResponse(resp) {
+  if (resp.error) {
+    showAuthError(resp.error);
+    return;
   }
-  if (!token) return false;
 
-  accessToken = token;
+  accessToken = resp.access_token;
   try {
     const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { 'Authorization': 'Bearer ' + accessToken }
@@ -413,7 +414,10 @@ async function handleRedirect() {
       showAuthError(`${email || domain} - Access denied.`);
       accessToken = null;
       clearAuthSession(false);
-      return true;
+      if (window.google && google.accounts && google.accounts.oauth2) {
+        google.accounts.oauth2.revoke(resp.access_token);
+      }
+      return;
     }
 
     currentUser = { name: user.name || email, email, picture: user.picture || '' };
@@ -424,7 +428,6 @@ async function handleRedirect() {
     clearAuthSession(true);
     showAuthError('Failed to verify user: ' + e.message);
   }
-  return true;
 }
 
 function showLogin() {
@@ -441,6 +444,9 @@ function showApp(user) {
 }
 
 function signOut() {
+  if (accessToken && window.google && google.accounts && google.accounts.oauth2) {
+    google.accounts.oauth2.revoke(accessToken);
+  }
   clearAuthSession(false);
   sessionStorage.removeItem(CACHE_KEY);
   accessToken = null;
@@ -448,9 +454,7 @@ function signOut() {
   location.reload();
 }
 
-async function checkSession() {
-  if (await handleRedirect()) return;
-
+function checkSession() {
   const token = localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY);
   const userStr = localStorage.getItem(AUTH_USER_KEY) || sessionStorage.getItem(AUTH_USER_KEY);
   if (token && userStr) {
