@@ -8,7 +8,6 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>KMTC Freight Rate Dashboard</title>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
@@ -138,9 +137,9 @@ tr:hover { background: #f8f9ff; }
 
 
 /* Auth */
-#authOverlay { position: fixed; inset: 0; background: linear-gradient(135deg, #1a237e, #283593); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-.auth-box { background: white; border-radius: 16px; padding: 50px 40px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3); max-width: 400px; }
-.auth-box h2 { font-size: 22px; color: #1a237e; margin-bottom: 8px; }
+#authOverlay { position: fixed; inset: 0; background: #f0f2f5; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.auth-box { background: white; border-radius: 12px; padding: 40px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.1); max-width: 420px; }
+.auth-box h2 { font-size: 22px; color: #1a73e8; margin-bottom: 8px; }
 .auth-box p { font-size: 14px; color: #666; margin-bottom: 30px; }
 .auth-box .auth-error { color: #e53935; font-size: 13px; margin-top: 15px; display: none; }
 .auth-user { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(255,255,255,0.15); border-radius: 20px; font-size: 13px; cursor: pointer; color: white; }
@@ -161,8 +160,8 @@ tr:hover { background: #f8f9ff; }
   <div class="auth-box">
     <h2>KMTC Freight Rate Dashboard</h2>
     <p>Sign in with your company Google account</p>
-    <button id="btnGoogleSignIn" onclick="doSignIn()" style="display:inline-flex; align-items:center; gap:10px; padding:10px 24px; border:1px solid #ddd; border-radius:4px; font-size:14px; font-weight:500; background:white; cursor:pointer;">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.9 23.9 0 000 24c0 3.77.89 7.33 2.44 10.49l8.09-5.9z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    <button id="btnGoogleSignIn" onclick="doSignIn()" style="display:inline-flex; align-items:center; gap:10px; padding:10px 24px; border:0; border-radius:6px; font-size:15px; font-weight:500; background:#1a73e8; color:#fff; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.9 23.9 0 000 24c0 3.77.89 7.33 2.44 10.49l8.09-5.9z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
       Sign in with Google
     </button>
     <div class="auth-error" id="authError"></div>
@@ -198,12 +197,24 @@ tr:hover { background: #f8f9ff; }
   <div class="filters">
     <div class="filter-group">
       <label>Source</label>
-      <select id="fSource"><option value="">All</option></select>
+      <div class="multi-select" id="msSource">
+        <div class="ms-trigger" onclick="toggleMultiSelect('msSource')">
+          <span class="ms-label">All</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown"></div>
+      </div>
       <div class="source-desc" id="sourceDesc"></div>
     </div>
     <div class="filter-group">
       <label>POL Country</label>
-      <select id="fPolCn"><option value="">All</option></select>
+      <div class="multi-select" id="msPolCn">
+        <div class="ms-trigger" onclick="toggleMultiSelect('msPolCn')">
+          <span class="ms-label">All</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown"></div>
+      </div>
     </div>
     <div class="filter-group">
       <label>POL Port</label>
@@ -217,18 +228,33 @@ tr:hover { background: #f8f9ff; }
     </div>
     <div class="filter-group">
       <label>POD Country</label>
-      <select id="fPodCn"><option value="">All</option></select>
+      <div class="multi-select" id="msPodCn">
+        <div class="ms-trigger" onclick="toggleMultiSelect('msPodCn')">
+          <span class="ms-label">All</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown"></div>
+      </div>
     </div>
     <div class="filter-group">
       <label>POD Port</label>
-      <select id="fPodPort"><option value="">All</option></select>
+      <div class="multi-select" id="msPodPort">
+        <div class="ms-trigger" onclick="toggleMultiSelect('msPodPort')">
+          <span class="ms-label">All</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown"></div>
+      </div>
     </div>
     <div class="filter-group">
       <label>Container</label>
-      <select id="fContainer">
-        <option value="r40">40ft</option>
-        <option value="r20">20ft</option>
-      </select>
+      <div class="multi-select" id="msContainer">
+        <div class="ms-trigger" onclick="toggleMultiSelect('msContainer')">
+          <span class="ms-label">40ft</span>
+          <span class="arrow">&#9660;</span>
+        </div>
+        <div class="ms-dropdown"></div>
+      </div>
     </div>
     <div class="filter-actions">
       <button class="btn btn-primary" onclick="searchRoutes()" title="Search">Search</button>
@@ -303,59 +329,107 @@ if (navigator.serviceWorker) {
 }
 </script>
 <script>
-// ============ AUTH (Token Client for Sheets API access) ============
+// ============ AUTH (OAuth2 redirect flow, shared with -3W dashboard style) ============
 const GOOGLE_CLIENT_ID = '409330651463-giie223egsskdq10etn642gjtron1hq5.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.readonly email profile openid';
-const ALLOWED_DOMAINS = []; // e.g. ['kmtc.co.kr']
+const ALLOWED_DOMAINS = ['ekmtc.com'];
+const REDIRECT_URI = location.origin + '/kmtc-rate-dashboard/';
+const AUTH_TOKEN_KEY = 'gtoken';
+const AUTH_USER_KEY = 'guser';
 
 let accessToken = null;
-let tokenClient = null;
+let currentUser = null;
 
-function initTokenClient() {
-  if (tokenClient) return;
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: SCOPES,
-    callback: handleTokenResponse,
-  });
+function showAuthError(message) {
+  const el = document.getElementById('authError');
+  el.textContent = message;
+  el.style.display = 'block';
+}
+
+function storedUser() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_USER_KEY) || sessionStorage.getItem(AUTH_USER_KEY) || 'null');
+  } catch(e) {
+    return null;
+  }
+}
+
+function saveAuthSession(token, user) {
+  const userText = JSON.stringify(user);
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  localStorage.setItem(AUTH_USER_KEY, userText);
+  sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+  sessionStorage.setItem(AUTH_USER_KEY, userText);
+}
+
+function clearAuthSession(keepUser) {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  if (!keepUser) {
+    localStorage.removeItem(AUTH_USER_KEY);
+    sessionStorage.removeItem(AUTH_USER_KEY);
+  }
 }
 
 function doSignIn() {
-  initTokenClient();
-  tokenClient.requestAccessToken();
+  const prevUser = storedUser();
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: REDIRECT_URI,
+    response_type: 'token',
+    scope: SCOPES,
+    include_granted_scopes: 'true'
+  });
+  if (prevUser && prevUser.email) params.set('login_hint', prevUser.email);
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
 }
 
-async function handleTokenResponse(resp) {
-  if (resp.error) {
-    document.getElementById('authError').textContent = resp.error;
-    document.getElementById('authError').style.display = 'block';
-    return;
-  }
-  accessToken = resp.access_token;
+async function handleRedirect() {
+  const hash = location.hash.substring(1);
+  if (!hash) return false;
 
-  // Fetch user info
+  const params = new URLSearchParams(hash);
+  const error = params.get('error');
+  const token = params.get('access_token');
+  history.replaceState(null, '', location.pathname + location.search);
+
+  if (error) {
+    showAuthError(error);
+    return true;
+  }
+  if (!token) return false;
+
+  accessToken = token;
   try {
     const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { 'Authorization': 'Bearer ' + accessToken }
     });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const user = await r.json();
-    const domain = (user.email || '').split('@')[1] || '';
+    const email = user.email || '';
+    const domain = (email.split('@')[1] || '').toLowerCase();
 
-    if (ALLOWED_DOMAINS.length > 0 && !ALLOWED_DOMAINS.includes(domain)) {
-      document.getElementById('authError').textContent = `${user.email} - Access denied.`;
-      document.getElementById('authError').style.display = 'block';
+    if (ALLOWED_DOMAINS.length && !ALLOWED_DOMAINS.includes(domain)) {
+      showAuthError(`${email || domain} - Access denied.`);
       accessToken = null;
-      google.accounts.oauth2.revoke(resp.access_token);
-      return;
+      clearAuthSession(false);
+      return true;
     }
 
-    sessionStorage.setItem('gtoken', accessToken);
-    sessionStorage.setItem('guser', JSON.stringify({ name: user.name, email: user.email, picture: user.picture }));
-    showApp(user);
+    currentUser = { name: user.name || email, email, picture: user.picture || '' };
+    saveAuthSession(accessToken, currentUser);
+    showApp(currentUser);
   } catch(e) {
-    document.getElementById('authError').textContent = 'Failed to get user info.';
-    document.getElementById('authError').style.display = 'block';
+    accessToken = null;
+    clearAuthSession(true);
+    showAuthError('Failed to verify user: ' + e.message);
   }
+  return true;
+}
+
+function showLogin() {
+  document.getElementById('appWrap').style.display = 'none';
+  document.getElementById('authOverlay').style.display = 'flex';
 }
 
 function showApp(user) {
@@ -367,20 +441,54 @@ function showApp(user) {
 }
 
 function signOut() {
-  if (accessToken) google.accounts.oauth2.revoke(accessToken);
-  sessionStorage.clear();
+  clearAuthSession(false);
+  sessionStorage.removeItem(CACHE_KEY);
+  accessToken = null;
+  currentUser = null;
   location.reload();
 }
 
-function checkSession() {
-  const token = sessionStorage.getItem('gtoken');
-  const userStr = sessionStorage.getItem('guser');
+async function checkSession() {
+  if (await handleRedirect()) return;
+
+  const token = localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY);
+  const userStr = localStorage.getItem(AUTH_USER_KEY) || sessionStorage.getItem(AUTH_USER_KEY);
   if (token && userStr) {
     accessToken = token;
-    try { showApp(JSON.parse(userStr)); return; } catch(e) {}
+    try {
+      currentUser = JSON.parse(userStr);
+    } catch(e) {
+      clearAuthSession(false);
+      showLogin();
+      return;
+    }
+
+    const domain = ((currentUser.email || '').split('@')[1] || '').toLowerCase();
+    if (ALLOWED_DOMAINS.length && !ALLOWED_DOMAINS.includes(domain)) {
+      clearAuthSession(false);
+      showLogin();
+      showAuthError(`${currentUser.email || domain} - Access denied.`);
+      return;
+    }
+
+    fetch('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=' + encodeURIComponent(token))
+      .then(r => {
+        if (r.ok) {
+          saveAuthSession(token, currentUser);
+          showApp(currentUser);
+        } else {
+          clearAuthSession(true);
+          showLogin();
+        }
+      })
+      .catch(() => {
+        clearAuthSession(true);
+        showLogin();
+      });
+    return;
   }
-  sessionStorage.clear();
-  document.getElementById('authOverlay').style.display = 'flex';
+  clearAuthSession(true);
+  showLogin();
 }
 
 window.addEventListener('load', checkSession);
@@ -414,7 +522,17 @@ const POL_COUNTRY_MAP = {
 const SOURCE_DESC = { 'SEA': '동남아/중동/기타', 'CN_HK': '중국/홍콩' };
 
 // Multi-select state
-const msState = { msPolPort: { selected: new Set(), allValues: [] } };
+const msState = {
+  msSource: { selected: new Set(), allValues: [] },
+  msPolCn: { selected: new Set(), allValues: [] },
+  msPolPort: { selected: new Set(), allValues: [] },
+  msPodCn: { selected: new Set(), allValues: [] },
+  msPodPort: { selected: new Set(), allValues: [] },
+  msContainer: { selected: new Set(['r40']), allValues: [] }
+};
+const MS_LABELS = {
+  msContainer: { r40: '40ft', r20: '20ft' }
+};
 
 // ============ GOOGLE SHEETS API ============
 const SEA_SHEET_ID  = '1Itzp1CccniJngry-535jLnFvfDuuG0se';
@@ -426,7 +544,7 @@ const CACHE_TTL  = 30 * 60 * 1000; // 30 min
 
 async function sheetsApi(url) {
   const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
-  if (r.status === 401) { sessionStorage.clear(); location.reload(); return; }
+  if (r.status === 401) { clearAuthSession(true); location.reload(); return; }
   if (!r.ok) throw new Error('Sheets API ' + r.status);
   return r.json();
 }
@@ -446,7 +564,7 @@ async function batchGetValues(id, ranges) {
 async function downloadAndParseXlsx(fileId) {
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
   const resp = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
-  if (resp.status === 401) { sessionStorage.clear(); location.reload(); return; }
+  if (resp.status === 401) { clearAuthSession(true); location.reload(); return; }
   if (!resp.ok) throw new Error('Drive download ' + resp.status);
   const buf = await resp.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array' });
@@ -496,6 +614,31 @@ function normalizeRemark(value) {
   return text.replace(/\n/g, ' ');
 }
 
+function normalizeCountry(value) {
+  const text = String(value ?? '').trim().split('\n')[0].toUpperCase();
+  const match = text.match(/^(N\.CN|S\.CN|[A-Z]{2,3})\b/);
+  return match ? match[1] : text;
+}
+
+function isPodCountryLabel(value) {
+  const text = String(value ?? '').trim().toUpperCase().replace(/\n/g, ' ');
+  return text.startsWith('POD CN') || text === 'POD';
+}
+
+function isPodPortLabel(value) {
+  const text = String(value ?? '').trim().toUpperCase().replace(/\n/g, ' ');
+  return text.includes('POD') && (text.includes('PORT') || text.includes('AREA'));
+}
+
+function parsePolGroup(value, country) {
+  if (!value || !country) return [];
+  const text = String(value).trim().replace(/\n/g, ',').replace(/\//g, ',').replace(/\bONLY\b/ig, '');
+  return text
+    .split(/[,\s]+/)
+    .filter(s => /^[A-Z]{2,4}$/i.test(s))
+    .map(s => `${country} ${s.toUpperCase()}`);
+}
+
 function findRemarkCol(rows, maxRows) {
   for (let r = 0; r < Math.min(rows.length, maxRows); r++) {
     for (let c = 0; c < (rows[r] || []).length; c++) {
@@ -514,26 +657,35 @@ function parseSEA(sheetNames, valuesArr) {
     const rows = valuesArr[si].values || [];
     if (rows.length < 5) return;
 
-    // Auto-detect week header row (scan rows 0-3)
+    // Auto-detect week header row.
     let weekRow = -1, weekStartCol = -1;
-    for (let ri = 0; ri < 4 && weekRow < 0; ri++) {
-      for (let c = 5; c < (rows[ri]||[]).length; c++) {
+    for (let ri = 0; ri < 7 && weekRow < 0; ri++) {
+      for (let c = 0; c < (rows[ri]||[]).length; c++) {
         if (parseWeekLabel(cell(rows, ri, c))) { weekRow = ri; weekStartCol = c; break; }
       }
     }
     if (weekRow < 0) return;
 
-    // Detect 3-column format: "POD CN" at col B means POL-group column exists at col A
     const labelRow = weekRow + 1;
-    const labelB = cell(rows, labelRow, 1);
-    const is3Col = labelB && String(labelB).trim().startsWith('POD CN');
+    let cnCol = -1;
+    for (let c = 0; c < Math.min((rows[labelRow] || []).length, 7); c++) {
+      if (isPodCountryLabel(cell(rows, labelRow, c))) { cnCol = c; break; }
+    }
+    if (cnCol < 0) cnCol = 0;
 
-    const cnCol = is3Col ? 1 : 0;
-    const portCol = is3Col ? 2 : 1;
+    let portCol = -1;
+    for (let c = cnCol + 1; c < Math.min((rows[labelRow] || []).length, cnCol + 5); c++) {
+      if (isPodPortLabel(cell(rows, labelRow, c))) { portCol = c; break; }
+    }
+    if (portCol < 0) portCol = cnCol + 1;
+
+    const polCol = cnCol > 0 && String(cell(rows, weekRow, cnCol - 1) ?? '').trim().toUpperCase() === 'POL'
+      ? cnCol - 1
+      : -1;
     const detectedRemarkCol = findRemarkCol(rows, weekRow + 3);
-    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : (is3Col ? 3 : 2);
+    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : portCol + 1;
     const dataStartRow = weekRow + 3;
-    const polCountry = is3Col ? String(cell(rows, weekRow, 1) || '').trim() : '';
+    const polCountry = polCol >= 0 ? normalizeCountry(cell(rows, weekRow, cnCol)) : '';
 
     // Collect weeks (step 2: 20ft, 40ft pairs)
     const weeks = [];
@@ -548,25 +700,15 @@ function parseSEA(sheetNames, valuesArr) {
     let curRemark = '';
 
     for (let r = dataStartRow; r < rows.length; r++) {
-      // 3-column: parse POL group from col A
-      if (is3Col) {
-        const gv = cell(rows, r, 0);
-        if (gv) {
-          const gs = String(gv).trim().replace(/\n/g, ',');
-          if (/ONLY/i.test(gs)) {
-            const m = gs.match(/^([A-Z]{2,4})/i);
-            if (m) activePols = [`${polCountry} ${m[1].toUpperCase()}`];
-          } else {
-            const parts = gs.split(/[,\s]+/).filter(s => /^[A-Z]{2,4}$/i.test(s));
-            if (parts.length > 0) activePols = parts.map(p => `${polCountry} ${p.toUpperCase()}`);
-          }
-        }
+      if (polCol >= 0) {
+        const pols = parsePolGroup(cell(rows, r, polCol), polCountry);
+        if (pols.length) activePols = pols;
       }
 
       const cv = cell(rows, r, cnCol);
       const pv = cell(rows, r, portCol);
       if (cv) {
-        curCn = String(cv).trim().split('\n')[0];
+        curCn = normalizeCountry(cv);
         curRemark = '';
       }
       if (!pv) continue;
@@ -614,18 +756,34 @@ function parseCNHK(sheetNames, valuesArr) {
       if (r3 && String(r3).includes('AB')) { hasABCD = true; break; }
     }
     const stride = weeks.length >= 2 ? weeks[1].col - weeks[0].col : 4;
+    let labelRow = -1;
+    let cnCol = -1;
+    for (let rr = 0; rr < Math.min(rows.length, 7) && cnCol < 0; rr++) {
+      for (let cc = 0; cc < Math.min((rows[rr] || []).length, 7); cc++) {
+        if (isPodCountryLabel(cell(rows, rr, cc))) { labelRow = rr; cnCol = cc; break; }
+      }
+    }
+    if (cnCol < 0) { labelRow = 2; cnCol = 0; }
+
+    let portCol = -1;
+    for (let cc = cnCol + 1; cc < Math.min((rows[labelRow] || []).length, cnCol + 5); cc++) {
+      if (isPodPortLabel(cell(rows, labelRow, cc))) { portCol = cc; break; }
+    }
+    if (portCol < 0) portCol = cnCol + 1;
+
     const detectedRemarkCol = findRemarkCol(rows, 5);
-    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : 2;
+    const remarkCol = detectedRemarkCol >= 0 ? detectedRemarkCol : portCol + 1;
+    const dataStartRow = Math.max(4, labelRow + 2);
 
     let curCn = '';
     let curRemark = '';
-    for (let r = 4; r < rows.length; r++) {
-      const cv = cell(rows, r, 0);
-      const pv = cell(rows, r, 1);
+    for (let r = dataStartRow; r < rows.length; r++) {
+      const cv = cell(rows, r, cnCol);
+      const pv = cell(rows, r, portCol);
       if (cv) {
         curRemark = '';
-        const cc = String(cv).trim();
-        if (cc && cc.length <= 5 && /^[A-Za-z.]+$/.test(cc)) curCn = cc;
+        const cc = normalizeCountry(cv);
+        if (cc && cc.length <= 5 && /^[A-Z.]+$/.test(cc)) curCn = cc;
       }
       if (!pv) continue;
       const podPort = String(pv).trim();
@@ -720,7 +878,7 @@ function cleanRates(rates) {
     'JPO':'JP','HOKKAIDO':'JP','MBA':'KE','SIN':'SG','CMB':'LK','AQJ':'JO',
     'KSP':'BH','DMM':'SA','ZLO':'MX','LGB':'US','VTZ':'IN','MUN':'IN',
     'MAA':'IN','KTP':'IN','CCU':'IN','COK':'IN','BOM':'IN','HZR':'IN',
-    'TUT':'IN','NNS':'SCN','SHK':'SCN','INC':'KR','PUS':'KR','MIP+MNL':'PH',
+    'TUT':'IN','NNS':'SCN','SHK':'SCN','INC':'KR','PUS':'KR','PNC':'KR','MIP+MNL':'PH',
     'RGN':'MM','VVO':'RU','BND':'IR','HMA':'QA'
   };
   for (const r of result) {
@@ -804,40 +962,31 @@ function refreshData() {
 // ============ FILTERS ============
 function initFilters() {
   const sources = [...new Set(DATA.map(d => d.src))].sort();
-  fillSelect('fSource', sources, true);
-
-  document.getElementById('fSource').addEventListener('change', () => { updateSourceDesc(); updatePolCnOptions(); });
-  document.getElementById('fPolCn').addEventListener('change', updatePolPortOptions);
-  document.getElementById('fPodCn').addEventListener('change', updatePodPortOptions);
+  buildMultiSelect('msSource', sources);
+  buildMultiSelect('msContainer', ['r40', 'r20']);
 
   updateSourceDesc();
   updatePolCnOptions();
 }
 
-function fillSelect(id, values, keepAll) {
-  const sel = document.getElementById(id);
-  const current = sel.value;
-  while (sel.options.length > 1) sel.remove(1);
-  values.forEach(v => {
-    if (!v) return;
-    const opt = document.createElement('option');
-    opt.value = v; opt.textContent = v;
-    sel.appendChild(opt);
-  });
-  if (current && values.includes(current)) sel.value = current;
+function uniqueSorted(values) {
+  return [...new Set(values)].filter(Boolean).sort();
 }
 
 function updateSourceDesc() {
-  const src = document.getElementById('fSource').value;
   const desc = document.getElementById('sourceDesc');
-  desc.textContent = src ? (SOURCE_DESC[src] || '') : '';
+  if (isMultiSelectAll('msSource')) {
+    desc.textContent = '';
+    return;
+  }
+  const selected = getSelectedValues('msSource');
+  desc.textContent = selected.map(src => SOURCE_DESC[src] || src).join(', ');
 }
 
-
-function getFiltered(srcFilter) {
+function getFiltered() {
   let filtered = DATA;
-  const src = srcFilter || document.getElementById('fSource').value;
-  if (src) filtered = filtered.filter(d => d.src === src);
+  const sources = getSelectedValues('msSource');
+  if (!isMultiSelectAll('msSource')) filtered = filtered.filter(d => sources.includes(d.src));
   return filtered;
 }
 
@@ -853,27 +1002,41 @@ function basePort(port) {
 
 function updatePolCnOptions() {
   const filtered = getFiltered();
-  const pols = [...new Set(filtered.map(d => d.pol))];
-  const countries = [...new Set(pols.map(p => getPolCountry(p)))].sort();
-  fillSelect('fPolCn', countries);
+  const countries = uniqueSorted(filtered.map(d => getPolCountry(d.pol)));
+  buildMultiSelect('msPolCn', countries);
   updatePolPortOptions();
 }
 
 function updatePolPortOptions() {
-  const filtered = getFiltered();
-  const polCn = document.getElementById('fPolCn').value;
-  let pols = [...new Set(filtered.map(d => d.pol))].sort();
-  if (polCn) pols = pols.filter(p => getPolCountry(p) === polCn);
+  let filtered = getFiltered();
+  const polCountries = getSelectedValues('msPolCn');
+  if (!isMultiSelectAll('msPolCn')) {
+    filtered = filtered.filter(d => polCountries.includes(getPolCountry(d.pol)));
+  }
+  const pols = uniqueSorted(filtered.map(d => d.pol));
   buildMultiSelect('msPolPort', pols);
   updatePodCnOptions();
 }
 
 // ============ MULTI-SELECT ============
+function getMsLabel(msId, value) {
+  return (MS_LABELS[msId] && MS_LABELS[msId][value]) || value;
+}
+
+function isMultiSelectAll(msId) {
+  return msState[msId].selected.size === 0;
+}
+
+function getSelectedValues(msId) {
+  const state = msState[msId];
+  return state.selected.size === 0 ? [...state.allValues] : [...state.selected];
+}
+
 function buildMultiSelect(msId, values) {
   const state = msState[msId];
-  state.allValues = values;
+  state.allValues = values.filter(Boolean);
   // Keep only still-valid selections
-  state.selected = new Set([...state.selected].filter(v => values.includes(v)));
+  state.selected = new Set([...state.selected].filter(v => state.allValues.includes(v)));
   renderMultiSelect(msId);
 }
 
@@ -884,7 +1047,7 @@ function renderMultiSelect(msId) {
   let html = `<label class="ms-item ms-all"><input type="checkbox" ${allChecked ? 'checked' : ''} onchange="msToggleAll('${msId}', this.checked)"> All</label>`;
   state.allValues.forEach((v, i) => {
     const checked = state.selected.has(v) ? 'checked' : '';
-    html += `<label class="ms-item"><input type="checkbox" data-idx="${i}" ${checked} onchange="msToggleIdx('${msId}',${i},this.checked)"> ${v}</label>`;
+    html += `<label class="ms-item"><input type="checkbox" data-idx="${i}" ${checked} onchange="msToggleIdx('${msId}',${i},this.checked)"> ${escapeHtml(getMsLabel(msId, v))}</label>`;
   });
   dd.innerHTML = html;
   // Update trigger label
@@ -892,14 +1055,17 @@ function renderMultiSelect(msId) {
   if (state.selected.size === 0) {
     label.innerHTML = 'All';
   } else if (state.selected.size <= 2) {
-    label.innerHTML = [...state.selected].join(', ');
+    label.innerHTML = [...state.selected].map(v => escapeHtml(getMsLabel(msId, v))).join(', ');
   } else {
-    label.innerHTML = `${[...state.selected].slice(0,2).join(', ')} <span class="ms-count">+${state.selected.size - 2}</span>`;
+    label.innerHTML = `${[...state.selected].slice(0,2).map(v => escapeHtml(getMsLabel(msId, v))).join(', ')} <span class="ms-count">+${state.selected.size - 2}</span>`;
   }
 }
 
 function toggleMultiSelect(msId) {
   const el = document.getElementById(msId);
+  document.querySelectorAll('.multi-select.open').forEach(ms => {
+    if (ms.id !== msId) ms.classList.remove('open');
+  });
   el.classList.toggle('open');
 }
 
@@ -907,7 +1073,7 @@ function msToggleAll(msId, checked) {
   const state = msState[msId];
   state.selected.clear(); // empty = all
   renderMultiSelect(msId);
-  updatePodCnOptions();
+  handleMultiSelectChange(msId);
 }
 
 function msToggleIdx(msId, idx, checked) {
@@ -925,7 +1091,20 @@ function msToggleIdx(msId, idx, checked) {
     }
   }
   renderMultiSelect(msId);
-  updatePodCnOptions();
+  handleMultiSelectChange(msId);
+}
+
+function handleMultiSelectChange(msId) {
+  if (msId === 'msSource') {
+    updateSourceDesc();
+    updatePolCnOptions();
+  } else if (msId === 'msPolCn') {
+    updatePolPortOptions();
+  } else if (msId === 'msPolPort') {
+    updatePodCnOptions();
+  } else if (msId === 'msPodCn') {
+    updatePodPortOptions();
+  }
 }
 
 // Close multi-select on outside click
@@ -936,31 +1115,52 @@ document.addEventListener('click', e => {
 });
 
 function getSelectedPols() {
-  const state = msState.msPolPort;
-  return state.selected.size === 0 ? [...state.allValues] : [...state.selected];
+  return getSelectedValues('msPolPort');
+}
+
+function getSelectedPodCountries() {
+  return getSelectedValues('msPodCn');
+}
+
+function getSelectedPodPorts() {
+  return getSelectedValues('msPodPort');
+}
+
+function getSelectedContainers() {
+  return getSelectedValues('msContainer');
 }
 
 function updatePodCnOptions() {
   let filtered = getFiltered();
+  const polCountries = getSelectedValues('msPolCn');
+  if (!isMultiSelectAll('msPolCn')) {
+    filtered = filtered.filter(d => polCountries.includes(getPolCountry(d.pol)));
+  }
   const selectedPols = getSelectedPols();
-  if (selectedPols.length > 0 && selectedPols.length < msState.msPolPort.allValues.length) {
+  if (!isMultiSelectAll('msPolPort')) {
     filtered = filtered.filter(d => selectedPols.includes(d.pol));
   }
-  const countries = [...new Set(filtered.map(d => d.pod_cn))].filter(Boolean).sort();
-  fillSelect('fPodCn', countries);
+  const countries = uniqueSorted(filtered.map(d => d.pod_cn));
+  buildMultiSelect('msPodCn', countries);
   updatePodPortOptions();
 }
 
 function updatePodPortOptions() {
   let filtered = getFiltered();
+  const polCountries = getSelectedValues('msPolCn');
+  if (!isMultiSelectAll('msPolCn')) {
+    filtered = filtered.filter(d => polCountries.includes(getPolCountry(d.pol)));
+  }
   const selectedPols = getSelectedPols();
-  const cn = document.getElementById('fPodCn').value;
-  if (selectedPols.length > 0 && selectedPols.length < msState.msPolPort.allValues.length) {
+  if (!isMultiSelectAll('msPolPort')) {
     filtered = filtered.filter(d => selectedPols.includes(d.pol));
   }
-  if (cn) filtered = filtered.filter(d => d.pod_cn === cn);
-  const ports = [...new Set(filtered.map(d => basePort(d.pod_port)))].filter(Boolean).sort();
-  fillSelect('fPodPort', ports);
+  const countries = getSelectedPodCountries();
+  if (!isMultiSelectAll('msPodCn')) {
+    filtered = filtered.filter(d => countries.includes(d.pod_cn));
+  }
+  const ports = uniqueSorted(filtered.map(d => basePort(d.pod_port)));
+  buildMultiSelect('msPodPort', ports);
 }
 
 // ============ COMPARE ============
@@ -969,7 +1169,7 @@ function searchRoutes() {
   addToCompare();
 }
 
-function addToCompare() {
+function addToCompareLegacy() {
   const selectedPols = getSelectedPols();
   const podCn = document.getElementById('fPodCn').value;
   const podPort = document.getElementById('fPodPort').value;
@@ -1012,6 +1212,75 @@ function addToCompare() {
       compareItems.push({ key, pol, podCn, podPort, tier, container,
         label: `${pol} → ${podPort || podCn} (${cSize})` });
     }
+  });
+
+  renderCompare();
+  updateChart();
+}
+
+function containerSizeLabel(container) {
+  return container === 'r20' ? "20'" : "40'";
+}
+
+function pushCompareItem(pol, podCn, podPort, tier, container, labelTarget) {
+  const key = `${pol}>${podCn || '*'}>${podPort || '*'}|${tier}|${container}`;
+  if (compareItems.find(c => c.key === key)) return;
+  compareItems.push({
+    key,
+    pol,
+    podCn,
+    podPort,
+    tier,
+    container,
+    label: `${pol} -> ${labelTarget} (${containerSizeLabel(container)})`
+  });
+}
+
+function addToCompare() {
+  const selectedPols = getSelectedPols();
+  const selectedPodCns = getSelectedPodCountries();
+  const selectedPodPorts = getSelectedPodPorts();
+  const selectedContainers = getSelectedContainers();
+  const podCnAll = isMultiSelectAll('msPodCn');
+  const podPortAll = isMultiSelectAll('msPodPort');
+
+  if (selectedPols.length === 0) { alert('Select at least one POL Port.'); return; }
+  if (selectedContainers.length === 0) { alert('Select at least one container.'); return; }
+
+  selectedPols.forEach(pol => {
+    const polSrc = DATA.find(d => d.pol === pol)?.src;
+    const tier = (polSrc === 'CN_HK') ? 'AB' : 'ALL';
+    let polData = DATA.filter(d => d.pol === pol);
+    if (tier !== 'ALL') polData = polData.filter(d => d.tier === tier);
+
+    selectedContainers.forEach(container => {
+      if (podCnAll && podPortAll) {
+        uniqueSorted(polData.map(d => d.pod_cn))
+          .forEach(cn => pushCompareItem(pol, cn, '', tier, container, cn));
+        return;
+      }
+
+      if (!podCnAll && podPortAll) {
+        selectedPodCns.forEach(cn => {
+          uniqueSorted(polData.filter(d => d.pod_cn === cn).map(d => basePort(d.pod_port)))
+            .forEach(port => pushCompareItem(pol, cn, port, tier, container, port));
+        });
+        return;
+      }
+
+      let routeData = polData;
+      if (!podCnAll) routeData = routeData.filter(d => selectedPodCns.includes(d.pod_cn));
+
+      const routeMap = new Map();
+      routeData.forEach(d => {
+        const port = basePort(d.pod_port);
+        if (!selectedPodPorts.includes(port)) return;
+        routeMap.set(`${d.pod_cn}|${port}`, { podCn: d.pod_cn, podPort: port });
+      });
+      [...routeMap.values()]
+        .sort((a, b) => `${a.podCn}-${a.podPort}`.localeCompare(`${b.podCn}-${b.podPort}`))
+        .forEach(({ podCn, podPort }) => pushCompareItem(pol, podCn, podPort, tier, container, podPort));
+    });
   });
 
   renderCompare();
