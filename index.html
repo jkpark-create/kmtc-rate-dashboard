@@ -546,8 +546,7 @@ const SEA_SHEET_ID  = '1Itzp1CccniJngry-535jLnFvfDuuG0se';
 const CNHK_SHEET_ID = '1T8ZZeJ0cr_jWvyki9OQHKmD8qW2Z4Ai4SgBn3Xkg3vk';
 const SEA_SKIP   = [' OBT key areas', 'PK', 'RS', 'LK', 'LB & ZLO'];
 const CNHK_SHEETS = ['SHA','NBO','TAO','XGG','DLC','NKG','SZP','CAN','XMN','HKG','MX'];
-const CACHE_KEY  = 'kmtc_rate_cache';
-const CACHE_TTL  = 30 * 60 * 1000; // 30 min
+const CACHE_KEY  = 'kmtc_rate_cache'; // Legacy cache key; cleared on every load.
 
 async function sheetsApi(url) {
   const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + accessToken } });
@@ -589,9 +588,11 @@ async function downloadAndParseXlsx(fileId) {
 function parseWeekLabel(label) {
   if (!label) return null;
   const s = String(label).replace(/\n/g, ' ');
-  const m = s.match(/(\d{4})\s*(?:W|WK)\s*(\d{1,2})/i);
-  if (!m) return null;
-  const year = parseInt(m[1]), wk = parseInt(m[2]);
+  const explicit = s.match(/(\d{4})\s*(?:W|WK)\s*(\d{1,2})/i);
+  const implicit = explicit ? null : s.match(/\bWK?\s*(\d{1,2})\b/i);
+  if (!explicit && !implicit) return null;
+  const year = explicit ? parseInt(explicit[1]) : new Date().getFullYear();
+  const wk = parseInt(explicit ? explicit[2] : implicit[1]);
   const d = new Date(year, 0, 1);
   d.setDate(d.getDate() + (wk - 1) * 7);
   return { wk: `${year}-W${String(wk).padStart(2,'0')}`, date: d.toISOString().slice(0,10) };
@@ -905,25 +906,9 @@ function setLoadingMsg(msg) {
 }
 
 async function loadData(forceRefresh) {
-  // Check cache
-  if (!forceRefresh) {
-    try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const { data, ts } = JSON.parse(cached);
-        if (Date.now() - ts < CACHE_TTL && data.length > 0) {
-          DATA = data;
-          document.getElementById('loadingDiv').style.display = 'none';
-          initFilters();
-
-          const age = Math.round((Date.now() - ts) / 60000);
-          document.getElementById('lastUpdate').textContent =
-            `${DATA.length.toLocaleString()} records | cached ${age}m ago`;
-          return;
-        }
-      }
-    } catch(e) { sessionStorage.removeItem(CACHE_KEY); }
-  }
+  // Always read the current Drive/Sheets values. Remove any cache created by
+  // older dashboard versions so a normal reload can never show stale rates.
+  try { sessionStorage.removeItem(CACHE_KEY); } catch(e) {}
 
   try {
     // Fetch SEA (Excel file on Drive → SheetJS)
@@ -942,9 +927,6 @@ async function loadData(forceRefresh) {
     // Clean
     setLoadingMsg(`Parsing ${seaRates.length + cnhkRates.length} records...`);
     DATA = cleanRates([...seaRates, ...cnhkRates]);
-
-    // Cache
-    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data: DATA, ts: Date.now() })); } catch(e) {}
 
     document.getElementById('loadingDiv').style.display = 'none';
     initFilters();
